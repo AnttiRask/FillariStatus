@@ -1,5 +1,6 @@
 source(here::here("app/www/variables.R"))
 source(here::here("app/www/functions.R"))
+library(stringr)
 
 stations_tbl <- tibble::tibble(
     station_id     = c("a", "b", "c", "d"),
@@ -54,4 +55,32 @@ test_that("dock mode drops stations that disallow dropoff", {
     out <- nearest_stations(stations_tbl, 60.1705, 24.9390, n = 10, mode = "dock")
     expect_false("d" %in% out$station_id)
     expect_equal(out$count, out$docks)
+})
+
+test_that("favourites are shown in addition to the n nearest", {
+    out <- nearest_stations(
+        stations_tbl, 60.1702, 24.9385, n = 1, mode = "bike", favourites = "b"
+    )
+    # The favourite (b) is kept even though it is far; plus the 1 nearest (c)
+    expect_equal(out$station_id, c("b", "c"))
+    expect_equal(out$favourite, c(TRUE, FALSE))
+})
+
+test_that("a favourite is not duplicated when it is also nearest", {
+    out <- nearest_stations(
+        stations_tbl, 60.1702, 24.9385, n = 2, favourites = "c"
+    )
+    expect_equal(anyDuplicated(out$station_id), 0)
+    expect_equal(out$station_id[1], "c")
+    expect_equal(nrow(out), 3)
+})
+
+test_that("filter_by_name matches case-insensitively and ignores blanks", {
+    st <- tibble::tibble(name = c("Kamppi", "Kiasma", "Töölö"))
+    expect_equal(filter_by_name(st, "kam")$name, "Kamppi")
+    expect_equal(filter_by_name(st, "  K ")$name, c("Kamppi", "Kiasma"))
+    expect_equal(filter_by_name(st, "TÖÖ")$name, "Töölö")
+    expect_equal(nrow(filter_by_name(st, "")), 3)
+    expect_equal(nrow(filter_by_name(st, NULL)), 3)
+    expect_equal(nrow(filter_by_name(st, "(")), 0)
 })

@@ -32,7 +32,7 @@ nearest_stations <- function(
     count_col <- if (mode == "bike") "bikes" else "docks"
     allow_col <- if (mode == "bike") "allow_pickup" else "allow_dropoff"
 
-    stations |>
+    ranked <- stations |>
         dplyr::filter(
             dplyr::coalesce(.data$operative, TRUE),
             dplyr::coalesce(.data[[allow_col]], TRUE)
@@ -43,6 +43,25 @@ nearest_stations <- function(
             status     = classify_status(.data$count, mode),
             favourite  = .data$station_id %in% favourites
         ) |>
-        dplyr::arrange(dplyr::desc(.data$favourite), .data$distance_m) |>
-        dplyr::slice_head(n = n)
+        dplyr::arrange(.data$distance_m)
+
+    # Favourites are always shown, pinned first, in addition to the n nearest
+    dplyr::bind_rows(
+        dplyr::filter(ranked, .data$favourite),
+        dplyr::filter(ranked, !.data$favourite) |> dplyr::slice_head(n = n)
+    )
+}
+
+filter_by_name <- function(stations, query) {
+    query <- stringr::str_squish(query %||% "")
+    if (!nzchar(query)) {
+        return(stations)
+    }
+    dplyr::filter(
+        stations,
+        stringr::str_detect(
+            stringr::str_to_lower(.data$name),
+            stringr::fixed(stringr::str_to_lower(query))
+        )
+    )
 }

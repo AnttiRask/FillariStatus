@@ -17,3 +17,11 @@ status_colours <- list(
     light = list(empty = "#D55E00", low = "#E69F00", plenty = "#009E73"),
     dark  = list(empty = "#FF4444", low = "#FFD700", plenty = "#00D9A0")
 )
+
+# Used until (or unless) the browser shares its location: Rautatientori
+default_location <- list(lat = 60.1699, lon = 24.9384)
+
+n_choices <- c(3L, 5L, 10L)
+
+# Manual refresh won't re-fetch if the cached data is younger than this
+min_manual_refresh_s <- 10
