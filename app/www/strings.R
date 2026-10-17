@@ -2,6 +2,8 @@
 
 strings <- list(
     title            = "FillariStatus",
+    title_first      = "Fillari",
+    title_second     = "Status",
     n_label          = "Stations",
     refresh          = "Refresh",
     locate           = "\U0001F4CD My location",
@@ -24,6 +26,8 @@ strings <- list(
     attribution      = "Station data \u00A9 HSL / Digitransit, licensed CC BY 4.0",
     privacy          = "Your location is used only to find nearby stations and isn't stored. Favourites stay in your browser.",
     credit           = "Created by",
+    more_projects    = "More from youcanbeapirate:",
+    source_code      = "Source code on GitHub",
     fav_add          = "Add to favourites",
     fav_remove       = "Remove from favourites"
 )

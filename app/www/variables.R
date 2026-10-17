@@ -48,3 +48,25 @@ n_choices <- 1:20
 
 # Manual refresh won't re-fetch if the cached data is younger than this
 min_manual_refresh_s <- 10
+
+# youcanbeapirate brand (same palette as BiblioStatus). Brand red is used for
+# chrome only (links, active tab, title accent), never for status meaning: the
+# "empty" status is a red-orange of its own. `red_on_dark` is a lighter red for
+# links on the dark background (brand red is only 3.1:1 there, this is 6.2:1).
+brand_colours <- list(
+    red         = "#C1272D",
+    red_on_dark = "#F26B70",
+    grey        = "#B2B2B2",
+    dark_bg     = "#191414"
+)
+
+gotham_css_url <- "https://fonts.cdnfonts.com/css/gotham-6"
+
+site_url <- "https://youcanbeapirate.com"
+repo_url <- "https://github.com/AnttiRask/FillariStatus"
+sibling_apps <- list(
+    list(name = "BiblioStatus",       url = "https://bibliostatus.youcanbeapirate.com"),
+    list(name = "Gallery of the Day", url = "https://galleryoftheday.youcanbeapirate.com"),
+    list(name = "TrackTeller",        url = "https://trackteller.youcanbeapirate.com"),
+    list(name = "TuneTeller",         url = "https://tuneteller.youcanbeapirate.com")
+)

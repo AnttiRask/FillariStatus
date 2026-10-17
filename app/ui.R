@@ -16,14 +16,32 @@ asset <- function(file) {
 
 page_fluid(
     title = strings$title,
-    theme = bs_theme(version = 5, primary = "#0072B2"),
+    theme = bs_theme(
+        version = 5,
+        primary = brand_colours$red,
+        base_font = font_collection(
+            font_link("Gotham", href = gotham_css_url),
+            "system-ui", "-apple-system", "Segoe UI", "Roboto",
+            "Helvetica Neue", "Arial", "sans-serif"
+        )
+    ) |>
+        # Bootstrap's dark-mode palette, in the BiblioStatus dark background and
+        # with a lighter brand red for links (brand red is too dim on dark)
+        bs_add_variables(
+            "body-bg-dark"          = brand_colours$dark_bg,
+            "link-color-dark"       = brand_colours$red_on_dark,
+            "link-hover-color-dark" = brand_colours$red_on_dark
+        ),
     tags$head(
         tags$style(HTML(paste0(
             ":root{", status_css(status_colours$light),
+            # Brand accent for the title and the active tab (chrome only)
+            "--fs-accent:", brand_colours$red, ";",
             # The map placeholder text lives in strings.R, like all UI text
             "--fs-map-loading:",
             jsonlite::toJSON(strings$loading_map, auto_unbox = TRUE), ";}",
-            "[data-bs-theme=dark]{", status_css(status_colours$dark), "}"
+            "[data-bs-theme=dark]{", status_css(status_colours$dark),
+            "--fs-accent:", brand_colours$red_on_dark, ";}"
         ))),
         tags$link(rel = "icon", type = "image/png", href = asset("favicon.png")),
         tags$link(rel = "icon", href = asset("favicon.ico"), sizes = "any"),
@@ -36,8 +54,19 @@ page_fluid(
         class = "fs-container",
         div(
             class = "fs-header",
-            h1(strings$title, class = "fs-title"),
-            input_dark_mode(id = "dark_mode")
+            # Built as one string: separate child nodes would be rendered with
+            # whitespace between them ("Fillari Status")
+            h1(
+                class = "fs-title",
+                HTML(paste0(
+                    htmltools::htmlEscape(strings$title_first),
+                    '<span class="fs-title-accent">',
+                    htmltools::htmlEscape(strings$title_second),
+                    "</span>"
+                ))
+            ),
+            # Light by default (like BiblioStatus); the toggle is still there
+            input_dark_mode(id = "dark_mode", mode = "light")
         ),
         div(
             class = "fs-controls",
@@ -76,10 +105,19 @@ page_fluid(
             p(strings$attribution),
             p(strings$privacy),
             p(
+                strings$more_projects, " ",
+                tags$span(
+                    class = "fs-footer-links",
+                    lapply(sibling_apps, function(app) a(href = app$url, app$name))
+                )
+            ),
+            p(
+                a(href = repo_url, strings$source_code),
+                " | ",
                 strings$credit, " ",
                 a(href = "https://www.linkedin.com/in/AnttiRask/", "Antti Rask"),
                 " | ",
-                a(href = "https://youcanbeapirate.com", "youcanbeapirate.com")
+                a(href = site_url, "youcanbeapirate.com")
             )
         )
     )
