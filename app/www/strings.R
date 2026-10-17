@@ -4,6 +4,7 @@ strings <- list(
     title            = "FillariStatus",
     title_first      = "Fillari",
     title_second     = "Status",
+    description      = "Find the nearest Helsinki and Espoo city bike stations and see how many bikes are available right now. Allow location access, or search for a station by name.",
     n_label          = "Stations",
     refresh          = "Refresh",
     updated          = "Updated %s ago",

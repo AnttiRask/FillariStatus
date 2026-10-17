@@ -8,6 +8,8 @@
 /* "Fillari" in the brand accent (red; lighter red on dark), "Status" in the text colour: same as the project pages */
 .fs-title-accent { color: var(--fs-accent); }
 
+.fs-description { margin: 0.5rem 0 1rem; color: var(--bs-secondary-color); }
+
 .fs-controls { display: flex; gap: 1.5rem; align-items: flex-end; flex-wrap: wrap; }
 .fs-controls .form-group, .fs-controls .shiny-input-container { margin-bottom: 0.5rem; }
 

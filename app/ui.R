@@ -69,6 +69,7 @@ page_fluid(
             # Light by default (like BiblioStatus); the toggle is still there
             input_dark_mode(id = "dark_mode", mode = "light")
         ),
+        p(class = "fs-description", strings$description),
         div(
             class = "fs-controls",
             textInput("search", strings$search_label, width = "100%"),
