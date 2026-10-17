@@ -278,6 +278,8 @@ FillariStatus/
 
 ### Gotchas that cost time
 
+- **Cloud Run `--concurrency` must exceed the number of parallel asset requests one page load makes.** BiblioStatus (about 25 JS/CSS files) was set to 20 in a hardening pass; the overflow requests were routed to freshly started instances, which answer **404 for Shiny's asset paths** (they are registered per instance), so the page came up blank or stuck on "Loading data". Back at 80 it was fine. Diagnose with Cloud Logging: group `httpRequest.status` by `labels.instanceId`; the 404s come from instances that never served the page. FillariStatus (fewer assets) runs at 20 with no 404s; re-check if its asset count grows.
+
 - **Leaflet draws icon markers (markerPane, z 600) above circle markers (overlayPane, z 400)**, so a "you are here" icon covers a station dot however you order the `add*` calls. Put it in its own pane below 400 (`addMapPane("me", 390)` on the base map, `pane = "me"` in `markerOptions()`), and make the ring bigger than a station disc or it vanishes completely when the two coincide.
 - **Tile providers answer HTTP 200 with placeholders.** Carto without a key: a ~2 KB "API KEY REQUIRED" watermark; Esri above zoom 16: an identical grey "Map data not yet available" tile (z17 and z18 are byte-identical). Check tile content/size, never just the status.
 - **Leaflet drops `leafletProxy` messages for a map that doesn't exist yet.** The map is in a hidden tab, so Shiny doesn't render it until first shown; drawing waits for `input$map_bounds`.
