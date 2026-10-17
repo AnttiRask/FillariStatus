@@ -142,9 +142,12 @@ test_that("carto_tile_url switches theme and only adds a key when set", {
 test_that("station_popup mirrors the card and escapes names", {
     st <- tibble::tibble(
         name = "<script>x</script> & Co", station_id = "smoove:077",
-        distance_m = 1636, bikes = 1L, lat = 60.1, lon = 24.9
+        distance_m = 1636, bikes = 1L, lat = 60.1, lon = 24.9, favourite = FALSE
     )
-    strings <- list(bike_one = "bike", bike_many = "bikes", directions = "Directions")
+    strings <- list(
+        bike_one = "bike", bike_many = "bikes", directions = "Directions",
+        fav_add = "Add to favourites", fav_remove = "Remove from favourites"
+    )
     html <- station_popup(st, strings)
     expect_match(html, "(077)", fixed = TRUE)
     expect_match(html, "1,64 km", fixed = TRUE)
@@ -153,4 +156,32 @@ test_that("station_popup mirrors the card and escapes names", {
     expect_false(grepl("<script>", html, fixed = TRUE))
     expect_match(html, "&lt;script&gt;", fixed = TRUE)
     expect_match(station_popup(transform(st, bikes = 5L), strings), "5 bikes", fixed = TRUE)
+})
+
+test_that("favourite_button reflects the favourite state", {
+    strings <- list(fav_add = "Add to favourites", fav_remove = "Remove from favourites")
+    off <- as.character(favourite_button("smoove:077", FALSE, strings))
+    on <- as.character(favourite_button("smoove:077", TRUE, strings))
+    expect_match(off, 'data-station-id="smoove:077"', fixed = TRUE)
+    expect_match(off, 'aria-pressed="false"', fixed = TRUE)
+    expect_match(off, "Add to favourites", fixed = TRUE)
+    expect_match(off, "\u2606", fixed = TRUE)
+    expect_match(on, 'aria-pressed="true"', fixed = TRUE)
+    expect_match(on, "is-fav", fixed = TRUE)
+    expect_match(on, "Remove from favourites", fixed = TRUE)
+    expect_match(on, "\u2605", fixed = TRUE)
+})
+
+test_that("the popup carries a favourite star for its station", {
+    strings <- list(
+        bike_one = "bike", bike_many = "bikes", directions = "Directions",
+        fav_add = "Add to favourites", fav_remove = "Remove from favourites"
+    )
+    st <- tibble::tibble(
+        name = "Kamppi", station_id = "smoove:077", distance_m = 100,
+        bikes = 3L, lat = 60.1, lon = 24.9, favourite = TRUE
+    )
+    html <- station_popup(st, strings)
+    expect_match(html, 'class="fs-fav is-fav"', fixed = TRUE)
+    expect_match(html, 'data-station-id="smoove:077"', fixed = TRUE)
 })

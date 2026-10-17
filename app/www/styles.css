@@ -71,6 +71,9 @@
 /* Popups stay white in dark mode, so keep their text dark */
 .leaflet-popup-content { color: #000; font-size: 14px; }
 .leaflet-popup-content a { color: #0072B2; }
+/* The popup is white in both themes, so the star needs fixed, readable colours */
+.leaflet-popup-content .fs-fav { color: #6c757d; padding-right: 0.3rem; }
+.leaflet-popup-content .fs-fav.is-fav { color: #E69F00; }
 
 .fs-footer {
     margin-top: 2rem;

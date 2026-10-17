@@ -75,14 +75,7 @@ function(input, output, session) {
                     class = "fs-card-main",
                     div(
                         class = "fs-name",
-                        tags$button(
-                            type = "button",
-                            class = paste("fs-fav", if (s$favourite) "is-fav"),
-                            `data-station-id` = s$station_id,
-                            `aria-pressed` = tolower(s$favourite),
-                            `aria-label` = if (s$favourite) strings$fav_remove else strings$fav_add,
-                            if (s$favourite) "★" else "☆"
-                        ),
+                        favourite_button(s$station_id, s$favourite, strings),
                         station_title(s$name, s$station_id)
                     ),
                     div(class = "fs-distance", format_distance(s$distance_m)),

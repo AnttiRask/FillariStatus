@@ -109,13 +109,28 @@ carto_tile_url <- function(dark = FALSE, key = "") {
     if (nzchar(key)) paste0(url, "?key=", key) else url
 }
 
+# The favourite star, used on list cards and in map popups. favourites.js
+# handles the click for every `.fs-fav` button.
+favourite_button <- function(station_id, favourite, strings) {
+    htmltools::tags$button(
+        type = "button",
+        class = paste("fs-fav", if (favourite) "is-fav"),
+        `data-station-id` = station_id,
+        `aria-pressed` = tolower(favourite),
+        `aria-label` = if (favourite) strings$fav_remove else strings$fav_add,
+        if (favourite) "\u2605" else "\u2606"
+    )
+}
+
 # Popup content for one station row; mirrors the list card. All text goes
 # through htmltools so station names are escaped.
 station_popup <- function(station, strings) {
     bikes_label <- if (station$bikes == 1) strings$bike_one else strings$bike_many
     as.character(htmltools::tags$div(
-        htmltools::tags$strong(station_title(station$name, station$station_id)),
-        htmltools::tags$br(),
+        htmltools::tags$div(
+            favourite_button(station$station_id, station$favourite, strings),
+            htmltools::tags$strong(station_title(station$name, station$station_id))
+        ),
         format_distance(station$distance_m),
         htmltools::tags$br(),
         paste(station$bikes, bikes_label),
