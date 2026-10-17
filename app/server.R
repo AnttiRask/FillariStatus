@@ -1,7 +1,9 @@
 function(input, output, session) {
-    mode <- reactive(input$mode %||% "bike")
     n <- reactive(as.integer(input$n %||% default_n_nearest))
     favourites <- reactive(as.character(unlist(input$favourites)))
+
+    # A non-blank search overrides the location-based list; blank restores it
+    search <- debounce(reactive(input$search), 300)
 
     has_location <- reactive(!is.null(input$user_location))
     location <- reactive({
@@ -27,16 +29,11 @@ function(input, output, session) {
         refresh_count(refresh_count() + 1)
     })
 
-    # Search is the fallback when location isn't available
     output$location_notice <- renderUI({
         if (has_location() || is.null(input$location_error)) {
             return(NULL)
         }
-        div(
-            class = "fs-notice",
-            p(strings$location_denied),
-            textInput("search", strings$search_label, width = "100%")
-        )
+        div(class = "fs-notice", strings$location_denied)
     })
 
     nearest <- reactive({
@@ -44,11 +41,8 @@ function(input, output, session) {
         req(res$data)
         loc <- location()
         res$data |>
-            filter_by_name(if (has_location()) NULL else input$search) |>
-            nearest_stations(
-                loc$lat, loc$lon,
-                n = n(), mode = mode(), favourites = favourites()
-            )
+            filter_by_name(search()) |>
+            nearest_stations(loc$lat, loc$lon, n = n(), favourites = favourites())
     })
 
     # Ticks every second so "updated X s ago" stays current
@@ -72,11 +66,8 @@ function(input, output, session) {
             return(div(class = "fs-notice", strings$no_matches))
         }
 
-        is_bike <- mode() == "bike"
         tagList(lapply(seq_len(nrow(st)), function(i) {
             s <- st[i, ]
-            big <- if (is_bike) s$bikes else s$docks
-            small <- if (is_bike) paste(s$docks, strings$docks) else paste(s$bikes, strings$bikes)
             directions_url <- sprintf(
                 "https://www.google.com/maps/dir/?api=1&destination=%s,%s&travelmode=walking",
                 s$lat, s$lon
@@ -95,10 +86,9 @@ function(input, output, session) {
                             `aria-label` = if (s$favourite) strings$fav_remove else strings$fav_add,
                             if (s$favourite) "★" else "☆"
                         ),
-                        s$name
+                        paste0(s$name, " (", station_number(s$station_id), ")")
                     ),
                     div(class = "fs-distance", paste0(round(s$distance_m), " m")),
-                    div(class = "fs-small", small),
                     tags$a(
                         class = "fs-directions",
                         href = directions_url,
@@ -107,7 +97,7 @@ function(input, output, session) {
                         strings$directions
                     )
                 ),
-                div(class = "fs-count", big)
+                div(class = "fs-count", s$bikes)
             )
         }))
     })

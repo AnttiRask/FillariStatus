@@ -51,15 +51,9 @@ test_that("nearest_stations pins favourites first", {
     expect_true(out$favourite[1])
 })
 
-test_that("dock mode drops stations that disallow dropoff", {
-    out <- nearest_stations(stations_tbl, 60.1705, 24.9390, n = 10, mode = "dock")
-    expect_false("d" %in% out$station_id)
-    expect_equal(out$count, out$docks)
-})
-
 test_that("favourites are shown in addition to the n nearest", {
     out <- nearest_stations(
-        stations_tbl, 60.1702, 24.9385, n = 1, mode = "bike", favourites = "b"
+        stations_tbl, 60.1702, 24.9385, n = 1, favourites = "b"
     )
     # The favourite (b) is kept even though it is far; plus the 1 nearest (c)
     expect_equal(out$station_id, c("b", "c"))
@@ -76,11 +70,22 @@ test_that("a favourite is not duplicated when it is also nearest", {
 })
 
 test_that("filter_by_name matches case-insensitively and ignores blanks", {
-    st <- tibble::tibble(name = c("Kamppi", "Kiasma", "Töölö"))
+    st <- tibble::tibble(
+        station_id = c("smoove:077", "smoove:102", "smoove:230"),
+        name = c("Kamppi", "Kiasma", "Töölö")
+    )
     expect_equal(filter_by_name(st, "kam")$name, "Kamppi")
     expect_equal(filter_by_name(st, "  K ")$name, c("Kamppi", "Kiasma"))
     expect_equal(filter_by_name(st, "TÖÖ")$name, "Töölö")
     expect_equal(nrow(filter_by_name(st, "")), 3)
     expect_equal(nrow(filter_by_name(st, NULL)), 3)
     expect_equal(nrow(filter_by_name(st, "(")), 0)
+    # Matches the station number too, but not the network prefix
+    expect_equal(filter_by_name(st, "230")$name, "Töölö")
+    expect_equal(nrow(filter_by_name(st, "smoove")), 0)
+})
+
+test_that("station_number drops the network prefix", {
+    expect_equal(station_number(c("smoove:077", "smoove:900")), c("077", "900"))
+    expect_equal(station_number("123"), "123")
 })

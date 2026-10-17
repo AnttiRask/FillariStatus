@@ -11,15 +11,7 @@ page_fluid(
         h1(strings$title, class = "fs-title"),
         div(
             class = "fs-controls",
-            radioButtons(
-                "mode",
-                strings$mode_label,
-                choices = c(
-                    setNames("bike", strings$mode_bike),
-                    setNames("dock", strings$mode_dock)
-                ),
-                inline = TRUE
-            ),
+            textInput("search", strings$search_label, width = "100%"),
             selectInput(
                 "n",
                 strings$n_label,
