@@ -25,6 +25,9 @@ page_fluid(
             jsonlite::toJSON(strings$loading_map, auto_unbox = TRUE), ";}",
             "[data-bs-theme=dark]{", status_css(status_colours$dark), "}"
         ))),
+        tags$link(rel = "icon", type = "image/png", href = asset("favicon.png")),
+        tags$link(rel = "icon", href = asset("favicon.ico"), sizes = "any"),
+        tags$link(rel = "apple-touch-icon", href = asset("favicon.png")),
         tags$link(rel = "stylesheet", href = asset("styles.css")),
         tags$script(src = asset("geolocation.js")),
         tags$script(src = asset("favourites.js"))
