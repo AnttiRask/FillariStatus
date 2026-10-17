@@ -6,7 +6,7 @@
 >
 > **For Claude Code:** read this whole file first. §0 says where the project stands, §12 lists the gotchas that cost time. BiblioStatus (`~/VSCode/BiblioStatus`) is the pattern to reuse. Ask before deploying anything or creating cloud resources, and before touching GitHub secrets, DNS or the repo's visibility.
 
-*Last updated: 2026-10-17, after Milestone 7 (deployed).*
+*Last updated: 2026-10-17, after Milestone 8 (all eight milestones done; revision 2 is live).*
 
 ---
 
@@ -21,11 +21,11 @@
 | 5 | Map tab, dark mode, styling | Done | `eafcaf0`, `5d2de01`, `b84ce76`, `6c3fab7`, `75f1ce5`, `146ea39` |
 | 6 | Off-season and error states | Done | `72d9c41` |
 | 7 | Docker + Cloud Run deploy | **Done, live** | `d0358e7`, `ca8c2d9`, `40051f3` |
-| 8 | README, CLAUDE.md, screenshot, favicon | **Next** | — |
+| 8 | README, CLAUDE.md, screenshot, favicon, MIT licence, redeploy | **Done, live (revision 2)** | `576c627`, `ee53e68` |
 
-**Pushed but not yet deployed:** the "Loading map…" placeholder (`fd1a23c`). The user chose to batch the redeploy with Milestone 8.
+**Deployed:** revision `fillaristatus-app-00002-6sm` (the first deploy plus the "Loading map…" placeholder, favicon and docs) serves 100 % of traffic.
 
-**Not done yet (needs the user's say-so):** GitHub Actions auto-deploy, custom domain `fillaristatus.youcanbeapirate.com`, making the repo public (then add the repo link to the footer).
+**Not done yet (needs the user's say-so):** GitHub Actions auto-deploy, custom domain `fillaristatus.youcanbeapirate.com`, making the repo public (then add the repo link to the footer). The repo has an MIT licence (`LICENSE`, 2026, same text as BiblioStatus) that takes effect for others once it is public.
 
 **Never verified (be honest about these):** phone browsers and Safari/Firefox (only desktop Chrome was driven; the user once reported an intermittent empty map box in "another desktop browser"), behaviour at a real season change (stations are live now), Cloud Run cold-start duration, and Carto's 503 behaviour under bursts.
 
@@ -178,16 +178,15 @@ FillariStatus/
 - **Secrets:** Secret Manager `digitransit-subscription-key` (created by `deploy.sh` from `.Renviron`) and the existing `carto-api-key`, both exposed as env vars through `--set-secrets`; the runtime service account `884476669514-compute@developer.gserviceaccount.com` has `secretAccessor`. A `github-deploy` service account already exists in the project (BiblioStatus uses it for Actions).
 - **Image:** `rocker/r-ver:4.6.1` (Ubuntu 24.04), system libraries from Posit Package Manager's sysreqs API, `renv::restore()` from P3M Linux binaries, renv cache **disabled** at build, non-root user `fillari`, ~889 MB. Built by Cloud Build (`gcloud builds submit`), ~7 min.
 - **Deploy:** `./deploy.sh` (asks for confirmation; `DRY_RUN=1` prints the plan). Locally: `docker compose up --build` → http://localhost:8083.
-- Observed: cold start 3.3 s, warm response ~0.24 s; Cloud Run logs clean; the only non-2xx is `GET /favicon.ico` 404.
+- Observed: cold start 3.3 s, warm response ~0.24 s; Cloud Run logs clean. The only non-2xx used to be `GET /favicon.ico` 404 (44 of them, all before 08:16 UTC); revision 2 serves the favicon and has had no 404s. Revision 2 was verified in Chrome over HTTPS (icons 200, placeholder CSS live, 5 markers with real tiles, favourites, no Shiny errors).
 - **Cost:** within the free tier expected; no budget alert was set up. `--min-instances 1` would remove cold starts at a small recurring cost (not applied; the user decides).
 
 ## 9. Later ideas (v2+)
 - **Tile robustness:** retry failed tiles. On one live load Carto answered 8 of 9 starting-zoom tiles with HTTP 503 (all fine moments later). Also avoid the throwaway zoom-13 starting view (request tiles only for the fitted view).
-- **Redeploy** with the loading placeholder (batched with Milestone 8).
 - Restrict the Carto key to the FillariStatus domain(s) in Carto's dashboard (the key is visible in tile URLs).
 - **History & patterns:** snapshot station status every 10–15 min into Turso, show "typically empty by 08:15 on weekdays". GitHub Actions cron is too unreliable at that granularity; use Cloud Scheduler → a tiny Cloud Run job.
 - Walking time via Digitransit routing instead of straight-line distance.
-- PWA manifest (install to home screen); favicon (Milestone 8).
+- PWA manifest (install to home screen). The favicon (PNG + ICO bicycle on the app blue) already exists.
 - Finnish/Swedish UI (strings are already centralised).
 - Optional `--min-instances 1`; a Cloud Billing budget alert.
 - Companion course module, reusing the BiblioStatus course format.
@@ -201,7 +200,7 @@ FillariStatus/
 5. **Map tab + dark mode + styling** — Done, then refined: markers drawn only once the map exists; popups with favourite star; popups clear of zoom controls; Stations dropdown no longer hidden behind the map's zoom buttons (`isolation: isolate` on the map).
 6. **Off-season & error states** — Done.
 7. **Docker + Cloud Run deploy** — Done and live.
-8. **README, CLAUDE.md, screenshot, favicon** — **Next.** Also: redeploy with the loading placeholder; decide on GitHub Actions auto-deploy, the custom domain and making the repo public.
+8. **README, CLAUDE.md, screenshot, favicon** — Done. Plus an MIT `LICENSE`, and a redeploy (revision 2) with the loading placeholder. The screenshot was taken from `127.0.0.1` (no location permission) so it shows the fallback position, not a real one. Still to decide with the user: GitHub Actions auto-deploy, the custom domain, making the repo public.
 
 ## 11. Decisions (originally "open questions")
 
@@ -220,7 +219,8 @@ FillariStatus/
 | "You are here" colour | Red (user's request), as a ring-and-dot icon for accessibility |
 | Popups vs zoom buttons | Can't be drawn on top (Leaflet puts controls above the map pane); popups pan to stay clear |
 | Static hosting on GitHub Pages | Rejected (§8) |
-| Redeploy timing | Batch with Milestone 8 |
+| Redeploy timing | Batched with Milestone 8 (done: revision 2) |
+| Licence | MIT, copyright 2026 Antti Rask (same as BiblioStatus apart from the year) |
 
 ## 12. Conventions and lessons learned
 
@@ -245,6 +245,9 @@ FillariStatus/
 - Carto key is exposed in tile URLs by design (as in BiblioStatus); restrict it by domain in Carto's dashboard once there is a stable domain.
 
 ## 13. Next steps (in order)
-1. **Milestone 8:** `README.md` (what it is, screenshot, local run, link to DEPLOY.md), `CLAUDE.md` (adapt BiblioStatus': commands, architecture, gotchas from §12), screenshot (Chrome), favicon, then **redeploy** (placeholder + favicon).
-2. Decide with the user: GitHub Actions auto-deploy (needs the `github-deploy` key as a secret in this repo: ask first), custom domain `fillaristatus.youcanbeapirate.com` (DNS CNAME to `ghs.googlehosted.com`), making the repo public (then add the repo link to the footer).
-3. v2 candidates from §9 (tile retry, history/patterns, walking time, PWA, Finnish UI).
+All eight milestones are done and the app is live. What remains is optional and needs the user's say-so:
+1. **GitHub Actions auto-deploy** on push to `main`: needs the existing `github-deploy` service account's key stored as a secret in this repo (ask first; BiblioStatus' workflow `deploy_shiny_app.yml` is the pattern). Until then, deploy with `./deploy.sh`.
+2. **Custom domain** `fillaristatus.youcanbeapirate.com` (`gcloud beta run domain-mappings create ...`, then a DNS CNAME to `ghs.googlehosted.com`; see DEPLOY.md). Then restrict the Carto key to that domain.
+3. **Make the repo public** (README, screenshot, licence and a clean history are ready; no secrets in the history), then add the repo link to the footer.
+4. v2 candidates from §9: tile retry for Carto 503s, history/patterns, walking time, PWA, Finnish UI; optionally `--min-instances 1` and a billing budget alert.
+5. Still unverified: phones and non-Chrome browsers, a real season change, and whether the intermittent empty map box (reported once, in a non-Chrome desktop browser) still occurs now that a placeholder is shown.
