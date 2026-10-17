@@ -12,9 +12,8 @@ SERVICE_NAME="${GCP_SERVICE_NAME:-fillaristatus-app}"
 AR_REPO="${GCP_AR_REPO:-cloud-run-source-deploy}"
 IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/$AR_REPO/$SERVICE_NAME"
 
-# Secret Manager secret names (the Carto one already exists for BiblioStatus)
+# Secret Manager secret name
 DIGITRANSIT_SECRET="${DIGITRANSIT_SECRET:-digitransit-subscription-key}"
-CARTO_SECRET="${CARTO_SECRET:-carto-api-key}"
 
 # Cost/behaviour guards. R Shiny serves requests on one thread per instance,
 # so keep concurrency modest and cap the instance count.
@@ -36,7 +35,7 @@ echo -e "${YELLOW}Project:${NC}  ${PROJECT_ID}"
 echo -e "${YELLOW}Region:${NC}   ${REGION}"
 echo -e "${YELLOW}Service:${NC}  ${SERVICE_NAME}  (max ${MAX_INSTANCES} instances, concurrency ${CONCURRENCY})"
 echo -e "${YELLOW}Image:${NC}    ${IMAGE}"
-echo -e "${YELLOW}Secrets:${NC}  ${DIGITRANSIT_SECRET} (created from .Renviron if missing), ${CARTO_SECRET} (must exist)"
+echo -e "${YELLOW}Secret:${NC}   ${DIGITRANSIT_SECRET} (created from .Renviron if missing)"
 echo ""
 
 # ---- Preconditions ----------------------------------------------------------
@@ -62,11 +61,6 @@ run gcloud services enable \
   --project "$PROJECT_ID"
 
 # ---- Secrets ----------------------------------------------------------------
-if ! gcloud secrets describe "$CARTO_SECRET" --project "$PROJECT_ID" &>/dev/null; then
-  echo -e "${RED}Secret ${CARTO_SECRET} not found. Create it first (value: the Carto API key).${NC}"
-  exit 1
-fi
-
 if ! gcloud secrets describe "$DIGITRANSIT_SECRET" --project "$PROJECT_ID" &>/dev/null; then
   echo -e "${YELLOW}Creating secret ${DIGITRANSIT_SECRET} from DIGITRANSIT_SUBSCRIPTION_KEY in .Renviron...${NC}"
   KEY="$(sed -n 's/^DIGITRANSIT_SUBSCRIPTION_KEY=//p' .Renviron | head -1)"
@@ -79,15 +73,13 @@ if ! gcloud secrets describe "$DIGITRANSIT_SECRET" --project "$PROJECT_ID" &>/de
   fi
 fi
 
-# The Cloud Run runtime service account must be able to read the secrets
+# The Cloud Run runtime service account must be able to read the secret
 PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')"
 RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
-for secret in "$DIGITRANSIT_SECRET" "$CARTO_SECRET"; do
-  run gcloud secrets add-iam-policy-binding "$secret" \
-    --member "serviceAccount:${RUNTIME_SA}" \
-    --role roles/secretmanager.secretAccessor \
-    --project "$PROJECT_ID" --quiet
-done
+run gcloud secrets add-iam-policy-binding "$DIGITRANSIT_SECRET" \
+  --member "serviceAccount:${RUNTIME_SA}" \
+  --role roles/secretmanager.secretAccessor \
+  --project "$PROJECT_ID" --quiet
 
 # ---- Build ------------------------------------------------------------------
 echo -e "${GREEN}Building container image with Cloud Build...${NC}"
@@ -99,6 +91,8 @@ run gcloud builds submit \
 
 # ---- Deploy -----------------------------------------------------------------
 echo -e "${GREEN}Deploying to Cloud Run...${NC}"
+# --set-secrets replaces all existing secrets, which also drops the map-tile key
+# that earlier revisions used
 run gcloud run deploy "$SERVICE_NAME" \
   --image "$IMAGE" \
   --platform managed \
@@ -109,7 +103,7 @@ run gcloud run deploy "$SERVICE_NAME" \
   --session-affinity \
   --max-instances "$MAX_INSTANCES" \
   --concurrency "$CONCURRENCY" \
-  --set-secrets "DIGITRANSIT_SUBSCRIPTION_KEY=${DIGITRANSIT_SECRET}:latest,CARTO_API_KEY=${CARTO_SECRET}:latest" \
+  --set-secrets "DIGITRANSIT_SUBSCRIPTION_KEY=${DIGITRANSIT_SECRET}:latest" \
   --project "$PROJECT_ID"
 
 if [[ "${DRY_RUN:-0}" != "1" ]]; then

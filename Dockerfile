@@ -58,8 +58,8 @@ RUN useradd --system --create-home --shell /usr/sbin/nologin fillari \
     && chown -R fillari:fillari /app
 USER fillari
 
-# Cloud Run sets PORT; DIGITRANSIT_SUBSCRIPTION_KEY and CARTO_API_KEY are
-# injected at runtime (Secret Manager), never baked into the image
+# Cloud Run sets PORT; DIGITRANSIT_SUBSCRIPTION_KEY is injected at runtime
+# (Secret Manager), never baked into the image
 ENV PORT=8080
 EXPOSE 8080
 

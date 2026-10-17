@@ -82,6 +82,8 @@ jobs:
 
       - name: Deploy to Cloud Run
         run: |
+          # --set-secrets replaces all existing secrets, which also drops the map-tile
+          # key that earlier revisions used
           gcloud run deploy "$SERVICE" \
             --image "$IMAGE" \
             --platform managed \
@@ -92,7 +94,7 @@ jobs:
             --session-affinity \
             --max-instances 3 \
             --concurrency 20 \
-            --set-secrets "DIGITRANSIT_SUBSCRIPTION_KEY=digitransit-subscription-key:latest,CARTO_API_KEY=carto-api-key:latest" \
+            --set-secrets "DIGITRANSIT_SUBSCRIPTION_KEY=digitransit-subscription-key:latest" \
             --project ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Smoke test the deployed service
