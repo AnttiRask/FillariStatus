@@ -83,8 +83,7 @@ page_fluid(
         div(
             class = "fs-meta",
             textOutput("updated", inline = TRUE),
-            actionLink("refresh", strings$refresh),
-            tags$a(id = "locate", href = "#", strings$locate)
+            actionLink("refresh", strings$refresh)
         ),
         uiOutput("data_notice"),
         uiOutput("location_notice"),

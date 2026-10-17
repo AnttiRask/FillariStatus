@@ -257,3 +257,9 @@ test_that("an empty list is explained differently when searching", {
         expect_match(html_of(output$station_list), "match your search", fixed = TRUE)
     })
 })
+
+test_that("the location notice doesn't point at a control that no longer exists", {
+    expect_false("locate" %in% names(server_env$strings))
+    expect_false(grepl("My location", server_env$strings$location_denied, fixed = TRUE))
+    expect_match(server_env$strings$location_denied, "reload", fixed = TRUE)
+})

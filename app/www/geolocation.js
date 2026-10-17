@@ -1,4 +1,5 @@
-// navigator.geolocation -> Shiny inputs `user_location` / `location_error`
+// navigator.geolocation -> Shiny inputs `user_location` / `location_error`.
+// The position is read once, when the page connects; to refresh it, reload.
 (function () {
   function send(name, value) {
     Shiny.setInputValue(name, value, { priority: "event" });
@@ -25,5 +26,4 @@
   }
 
   $(document).on("shiny:connected", locate);
-  $(document).on("click", "#locate", locate);
 })();
