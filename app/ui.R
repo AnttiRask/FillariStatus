@@ -84,7 +84,13 @@ page_fluid(
         div(
             class = "fs-meta",
             textOutput("updated", inline = TRUE),
-            actionLink("refresh", strings$refresh)
+            # Re-reads the browser location (geolocation.js); the station data
+            # refreshes itself every minute
+            actionLink(
+                "update_location", strings$update_location,
+                `data-busy` = strings$locating,
+                `data-failed` = strings$location_failed
+            )
         ),
         uiOutput("data_notice"),
         uiOutput("location_notice"),

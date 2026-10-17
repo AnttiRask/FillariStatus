@@ -172,23 +172,16 @@ format_age <- function(seconds) {
     )
 }
 
-# Whether a manual refresh may re-fetch, given when the cache last *tried* to
-# (successfully or not)
-should_refetch <- function(attempted_at, now = Sys.time(), min_age = min_manual_refresh_s) {
-    is.null(attempted_at) ||
-        as.numeric(difftime(now, attempted_at, units = "secs")) >= min_age
-}
-
 # The "you are here" marker: a red ring with a centre dot and a white halo. Its
 # shape (not just its colour) sets it apart from the numbered station discs;
 # the red alone is too close to the "empty" colour for some colour-blind users.
 me_icon_svg <- function(colour = status_colours$light$me) {
     sprintf(
         paste0(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">',
-            '<circle cx="14" cy="14" r="13" fill="#FFFFFF" fill-opacity="0.9"/>',
-            '<circle cx="14" cy="14" r="8.5" fill="#FFFFFF" stroke="%1$s" stroke-width="4"/>',
-            '<circle cx="14" cy="14" r="3.5" fill="%1$s"/>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">',
+            '<circle cx="22" cy="22" r="21" fill="#FFFFFF" fill-opacity="0.9"/>',
+            '<circle cx="22" cy="22" r="17" fill="#FFFFFF" fill-opacity="0.6" stroke="%1$s" stroke-width="4"/>',
+            '<circle cx="22" cy="22" r="4" fill="%1$s"/>',
             '</svg>'
         ),
         colour
@@ -201,8 +194,8 @@ me_icon <- function(colour = status_colours$light$me) {
             "data:image/svg+xml;utf8,",
             utils::URLencode(me_icon_svg(colour), reserved = TRUE)
         ),
-        iconWidth = 28, iconHeight = 28,
-        iconAnchorX = 14, iconAnchorY = 14
+        iconWidth = 44, iconHeight = 44,
+        iconAnchorX = 22, iconAnchorY = 22
     )
 }
 

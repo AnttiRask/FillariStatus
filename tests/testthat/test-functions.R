@@ -223,14 +223,6 @@ test_that("format_age picks a readable unit", {
     expect_equal(format_age(as.difftime(125, units = "secs")), "2 min")
 })
 
-test_that("should_refetch rate-limits on the last attempt", {
-    now <- Sys.time()
-    expect_true(should_refetch(NULL, now))
-    expect_false(should_refetch(now - 3, now, min_age = 10))
-    expect_true(should_refetch(now - 10, now, min_age = 10))
-    expect_true(should_refetch(now - 300, now, min_age = 10))
-})
-
 test_that("nearest_stations copes with an empty station list", {
     empty <- tibble::tibble(
         station_id = character(), name = character(), lat = double(), lon = double(),
@@ -251,8 +243,11 @@ test_that("the location marker is a ring-and-dot icon in the configured colour",
     expect_match(icon$iconUrl, "^data:image/svg\\+xml;utf8,")
     # URL-encoded: no raw angle brackets or spaces left in the data URI
     expect_false(grepl("[<> ]", sub("^data:image/svg\\+xml;utf8,", "", icon$iconUrl)))
-    expect_equal(c(icon$iconWidth, icon$iconHeight), c(28, 28))
-    expect_equal(c(icon$iconAnchorX, icon$iconAnchorY), c(14, 14))
+    expect_equal(c(icon$iconWidth, icon$iconHeight), c(44, 44))
+    expect_equal(c(icon$iconAnchorX, icon$iconAnchorY), c(22, 22))
+    # The ring must stick out past a station disc sitting right on top of it
+    # (the "you are here" marker is drawn underneath the stations)
+    expect_gt(icon$iconWidth / 2 - 2, map_marker_radius + 2)
 })
 
 test_that("add_basemap adds a base layer with the attribution and a labels layer without", {

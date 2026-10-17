@@ -232,7 +232,7 @@ test_that("with no data at all, a friendly message is shown and nothing crashes"
     with_result(result, testServer(server_fn, {
         session$flushReact()
         expect_equal(state(), "error")
-        expect_match(html_of(output$data_notice), "Refresh", fixed = TRUE)
+        expect_match(html_of(output$data_notice), "try again automatically", fixed = TRUE)
         expect_false(grepl("network down", html_of(output$data_notice)))
         expect_null(output$station_list$html)
         expect_equal(output$updated, "No data yet")
@@ -258,8 +258,11 @@ test_that("an empty list is explained differently when searching", {
     })
 })
 
-test_that("the location notice doesn't point at a control that no longer exists", {
+test_that("the location notice points at the real control and the manual data refresh is gone", {
     expect_false("locate" %in% names(server_env$strings))
     expect_false(grepl("My location", server_env$strings$location_denied, fixed = TRUE))
-    expect_match(server_env$strings$location_denied, "reload", fixed = TRUE)
+    expect_match(server_env$strings$location_denied, server_env$strings$update_location, fixed = TRUE)
+    # the data refreshes itself, so there is no manual data refresh any more
+    expect_false("refresh" %in% names(server_env$strings))
+    expect_false(grepl("tap Refresh", server_env$strings$no_data, fixed = TRUE))
 })

@@ -4,7 +4,7 @@
 
 ## 🔍 Features
 
-- 📍 **Nearest stations** from your browser's location: the 5 closest by default, adjustable from 1 to 20
+- 📍 **Nearest stations** from your browser's location: the 5 closest by default, adjustable from 1 to 20, with an "Update my location" link for when you've moved
 - 🚲 **Live bike counts**, colour-coded (empty / low / plenty) and always shown as a number too, so colour is never the only cue
 - 🗺️ **Map view** with the bike count printed on every marker, popups, and a "you are here" target
 - 🔍 **Search** by station name or number; it overrides the location-based list and clearing it brings the list back

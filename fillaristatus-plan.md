@@ -49,7 +49,7 @@
 - **Search** by name or station number, always available. A non-blank search replaces the nearest list (still sorted by distance from the user, still capped by N); clearing it restores the list. While searching, the map fits the results only, so a far-away match doesn't zoom out to include the user.
 - **Favourites** (per browser, `localStorage`): a favourite inside the N nearest takes one of the N slots; favourites outside it are added on top. Pinned first. Star on list cards and in map popups.
 - **Map tab** (leaflet, Esri World Light/Dark Gray tiles with a labels layer, no API key): markers coloured by status with the bike count printed on them, popups mirroring the card (with the favourite star), a ring-and-dot "you are here" marker, drawn through `leafletProxy` so pan/zoom survive the refresh. Shows "Loading map…" until drawn.
-- **Auto-refresh** every 60 s plus "Updated 6 min ago"; manual Refresh button (rate-limited).
+- **Auto-refresh** every 60 s plus "Updated 6 min ago"; the only manual control is "Update my location" (the data needs no manual refresh).
 - **Light by default** with a dark mode toggle (bslib; it used to follow the OS setting), mobile-first single column, youcanbeapirate brand colours and Gotham font (§6).
 - **States:** off-season ("City bike season is over…", not an error), failed refresh with older data (keeps showing it, warns how old), failed first load (plain message, never raw error text), location denied (notice + search), empty search.
 - Footer: HSL / Digitransit CC BY 4.0 attribution, a privacy line, links to the sibling projects (BiblioStatus, Gallery of the Day, TrackTeller, TuneTeller) and to the source repo, credit.
@@ -169,7 +169,7 @@ FillariStatus/
 - Colour: palette in `variables.R` (Okabe-Ito-based light, brighter dark variants), injected into the page as CSS custom properties by `ui.R`, so there is one source of truth.
 
 ### UI/server
-- Tabs List/Map under shared Search + Stations (1–20) + Refresh. There is no "My location" control: the position is read once per page load (reload to refresh it).
+- Tabs List/Map under shared Search + Stations (1–20) + an "Update my location" link. The position is read when the page connects and again on each tap of that link (`geolocation.js`, `maximumAge: 0` for taps; the link text shows "Locating…" / "Location unavailable"). The old Refresh link and `should_refetch()` are gone: the data refreshes itself every 60 s. The "you are here" marker lives in its own map pane (z 390, below the stations' overlay pane at 400) and is 44 px, so a station dot sitting on it hides only its centre and the ring still shows.
 - Search is `debounce()`d 300 ms. `searching()` drives the map-fit rule and the empty-list message.
 - Map: base map in `renderLeaflet`; markers via `leafletProxy` once `input$map_bounds` shows the map exists (see §12). The view re-fits only when the station set or the location changes; popups pan to stay ≥60 px from the left edge (clear of the zoom buttons).
 - Marker label (bike count) is black text (≥5.4:1 on every status fill). The user marker is an SVG ring-and-dot icon so it doesn't rely on colour.
@@ -263,7 +263,7 @@ FillariStatus/
 | Theme | youcanbeapirate brand red, Gotham (as the BiblioStatus app), **light by default**, lighter red links in dark mode, status colours unchanged |
 | Security headers | Wrap the page handler (enforced framing/referrer/permissions/HSTS + report-only CSP) |
 | GitHub hygiene | Secret scanning, push protection, Dependabot, protected `main`, SHA-pinned actions |
-| "My location" link | Removed (it did nothing visible when the position hadn't changed, jumped the page to the top, and re-asking after a denial doesn't work in most browsers). The position is read once per page load; the denied-location notice now says to allow location and reload. |
+| "My location" link | Removed (it did nothing visible when the position hadn't changed, jumped the page to the top, and re-asking after a denial doesn't work in most browsers). The position was read once per page load. **Replaced on 2026-10-18** by an "Update my location" link that really re-reads the position (user feedback after riding: the app didn't know they had moved); it also replaced the Refresh link, since the data refreshes every 60 s anyway. |
 | Project page | Yes: `docs/` on GitHub Pages, plus a card on the main site (both done) |
 | Deploy credential | A second key for the existing `github-deploy` account (same pattern as BiblioStatus); keyless WIF noted as the hardening option |
 
@@ -277,6 +277,8 @@ FillariStatus/
 - When something fails: read the full error, find the root cause, explain it, propose 2–3 ranked fixes, implement the top one; don't retry the same thing.
 
 ### Gotchas that cost time
+
+- **Leaflet draws icon markers (markerPane, z 600) above circle markers (overlayPane, z 400)**, so a "you are here" icon covers a station dot however you order the `add*` calls. Put it in its own pane below 400 (`addMapPane("me", 390)` on the base map, `pane = "me"` in `markerOptions()`), and make the ring bigger than a station disc or it vanishes completely when the two coincide.
 - **Tile providers answer HTTP 200 with placeholders.** Carto without a key: a ~2 KB "API KEY REQUIRED" watermark; Esri above zoom 16: an identical grey "Map data not yet available" tile (z17 and z18 are byte-identical). Check tile content/size, never just the status.
 - **Leaflet drops `leafletProxy` messages for a map that doesn't exist yet.** The map is in a hidden tab, so Shiny doesn't render it until first shown; drawing waits for `input$map_bounds`.
 - **Leaflet fires `layeradd` before popups are bound**, and stops click propagation inside popups: `favourites.js` listens in the capture phase and re-opens the popup after the settle.

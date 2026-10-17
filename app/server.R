@@ -12,22 +12,10 @@ function(input, output, session) {
         if (is.null(loc)) default_location else list(lat = loc$lat, lon = loc$lon)
     })
 
-    # Shared, memoised data; re-read every refresh interval and on demand
-    refresh_count <- reactiveVal(0)
+    # Shared, memoised data (60 s cache); re-read every refresh interval
     stations <- reactive({
         invalidateLater(refresh_ms)
-        refresh_count()
         get_stations()
-    })
-
-    observeEvent(input$refresh, {
-        # Rate-limit on the last *attempt* (successful or not), so repeated
-        # clicks during an outage don't each fire a slow, failing request
-        # The cache is shared by all sessions, so don't let a click hammer upstream
-        if (should_refetch(get_stations()$attempted_at)) {
-            memoise::forget(get_stations)
-        }
-        refresh_count(refresh_count() + 1)
     })
 
     state <- reactive(stations_state(stations()))
@@ -123,6 +111,9 @@ function(input, output, session) {
     # and zooming survive the 60 s data refresh
     output$map <- renderLeaflet({
         leaflet(options = leafletOptions(maxZoom = map_max_zoom)) |>
+            # "You are here" sits below the station markers (overlay pane is 400),
+            # so a station right next to the user is never hidden by it
+            addMapPane("me", zIndex = 390) |>
             add_basemap(isolate(is_dark())) |>
             setView(default_location$lon, default_location$lat, map_default_zoom)
     })
@@ -201,7 +192,7 @@ function(input, output, session) {
                     popupOptions = popupOptions(
                         autoPanPaddingTopLeft = map_popup_pan_padding
                     ),
-                    options = markerOptions(title = strings$you_are_here)
+                    options = markerOptions(title = strings$you_are_here, pane = "me")
                 )
         }
 

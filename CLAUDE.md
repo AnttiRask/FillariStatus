@@ -28,7 +28,7 @@ Stop a local server **by port** (`ss -ltnp | grep :8083`), never with `pkill -f 
 ## Architecture
 
 - `app/www/api.R` - query, `fetch_stations_raw()`, `parse_stations()`, `fetch_stations_safe()` (never throws; keeps last good data; returns `data, stale, error, fetched_at, attempted_at`), memoised `get_stations()` (60 s, shared by all sessions).
-- `app/www/functions.R` - `haversine_m`, `classify_status`, `nearest_stations` (n nearest + favourites outside them, favourites first), `filter_by_name`, `format_distance`, `stations_state` (`ok`/`off_season`/`stale`/`error`), `should_refetch`, popup/icon/colour helpers.
+- `app/www/functions.R` - `haversine_m`, `classify_status`, `nearest_stations` (n nearest + favourites outside them, favourites first), `filter_by_name`, `format_distance`, `stations_state` (`ok`/`off_season`/`stale`/`error`), popup/icon/colour helpers.
 - `app/www/variables.R` - thresholds, status palettes (light/dark), map settings, defaults. `app/www/strings.R` - **all** user-facing text. Add UI text there, not inline.
 - `app/server.R` - reactive logic; the list is a `renderUI`; the map base is `renderLeaflet` and markers are drawn through `leafletProxy`.
 - `app/ui.R` - layout; injects the status colours as CSS custom properties; `asset()` appends the file mtime to CSS/JS URLs (evaluated once at startup: restart after editing assets).
