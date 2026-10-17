@@ -7,8 +7,6 @@ server_env <- new.env(parent = globalenv())
 for (f in c("variables", "strings", "api", "functions")) {
     sys.source(here::here("app/www", paste0(f, ".R")), envir = server_env)
 }
-# Mirror what global.R provides
-server_env$carto_api_key <- ""
 # The test blocks below are evaluated in this file's environment, so bring in
 # the helpers they call directly instead of relying on other test files
 haversine_m <- server_env$haversine_m

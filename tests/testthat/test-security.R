@@ -21,12 +21,15 @@ test_that("the enforced CSP only contains directives that can't break the app", 
 
 test_that("the report-only CSP allows exactly the hosts the app uses", {
     csp <- security_headers()[["Content-Security-Policy-Report-Only"]]
-    expect_match(csp, "img-src [^;]*https://\\*\\.basemaps\\.cartocdn\\.com")
+    expect_match(csp, "img-src [^;]*https://services\\.arcgisonline\\.com")
+    expect_false(grepl("cartocdn", csp))
+    # the CSP host and the map's tile host are the same thing
+    expect_match(csp, map_tiles_host, fixed = TRUE)
     expect_match(csp, "font-src [^;]*https://fonts\\.cdnfonts\\.com")
     expect_match(csp, "style-src [^;]*https://fonts\\.cdnfonts\\.com")
     expect_match(csp, "connect-src 'self' wss:", fixed = TRUE)
     # nothing is allowed from arbitrary hosts
-    expect_false(grepl("\\*(;| |$)|https:(;| |$)", gsub("\\*\\.basemaps", "", csp)))
+    expect_false(grepl("\\*(;| |$)|https:(;| |$)", csp))
 })
 
 fake_app <- function(handler) structure(list(httpHandler = handler), class = "shiny.appobj")

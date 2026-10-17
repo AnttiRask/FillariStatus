@@ -4,8 +4,9 @@
 ## option does nothing), so run.R wraps the app's page handler instead. Static
 ## assets are served by other handlers and don't need these headers.
 
-# Hosts the page legitimately loads things from
-carto_tiles_host <- "https://*.basemaps.cartocdn.com"
+# Hosts the page legitimately loads things from (keep in sync with
+# map_tiles_host in variables.R)
+map_tiles_host <- "https://services.arcgisonline.com"
 font_host <- "https://fonts.cdnfonts.com"
 
 # Enforced: things that can't break the app. frame-ancestors is the modern
@@ -27,7 +28,7 @@ csp_report_only <- paste(
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     paste("style-src 'self' 'unsafe-inline'", font_host),
     paste("font-src 'self' data:", font_host),
-    paste("img-src 'self' data: blob:", carto_tiles_host),
+    paste("img-src 'self' data: blob:", map_tiles_host),
     "connect-src 'self' wss:",
     "frame-ancestors 'none'",
     "base-uri 'self'",

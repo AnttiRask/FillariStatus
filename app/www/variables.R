@@ -36,9 +36,18 @@ map_max_fit_zoom <- 16
 # Opening a popup pans the map so it stays at least this many px (x, y) from
 # the top-left edge, clear of the zoom buttons that sit there
 map_popup_pan_padding <- c(60, 10)
-carto_attribution <- paste0(
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ',
-    '&copy; <a href="https://carto.com/attributions">CARTO</a>'
+
+# Basemap: Esri's World Light / Dark Gray canvas (no API key needed). Each theme
+# is a base layer plus a labels ("Reference") layer drawn on top. The tiles are
+# real only up to zoom 16; from 17 on Esri serves a grey "Map data not yet
+# available" tile, so tile requests are capped at 16 and scaled up beyond that.
+map_tiles_host <- "https://services.arcgisonline.com"
+map_tile_max_native_zoom <- 16
+map_max_zoom <- 18
+map_attribution <- paste0(
+    "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; ",
+    '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> ',
+    "contributors, and the GIS user community"
 )
 
 # Used until (or unless) the browser shares its location: Rautatientori

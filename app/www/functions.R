@@ -99,14 +99,17 @@ status_colour <- function(status, dark = FALSE) {
     unname(out)
 }
 
-# Basemap tile URL template; the key is only appended when one is configured
-carto_tile_url <- function(dark = FALSE, key = "") {
-    url <- paste0(
-        "https://{s}.basemaps.cartocdn.com/",
-        if (dark) "dark_all" else "light_all",
-        "/{z}/{x}/{y}{r}.png"
-    )
-    if (nzchar(key)) paste0(url, "?key=", key) else url
+# Basemap tile URL templates for a theme: a base layer and a labels layer.
+# Esri tile URLs are ordered {z}/{y}/{x} (Carto's were {z}/{x}/{y}).
+map_tile_urls <- function(dark = FALSE) {
+    theme <- if (dark) "Dark" else "Light"
+    url <- function(layer) {
+        sprintf(
+            "%s/ArcGIS/rest/services/Canvas/World_%s_Gray_%s/MapServer/tile/{z}/{y}/{x}",
+            map_tiles_host, theme, layer
+        )
+    }
+    list(base = url("Base"), labels = url("Reference"))
 }
 
 # The favourite star, used on list cards and in map popups. favourites.js
@@ -201,4 +204,24 @@ me_icon <- function(colour = status_colours$light$me) {
         iconWidth = 28, iconHeight = 28,
         iconAnchorX = 14, iconAnchorY = 14
     )
+}
+
+# Adds the basemap to a leaflet map or proxy: the base layer (which carries the
+# attribution) and a labels layer on top. Note: attribution must be addTiles()'s
+# own `attribution` argument. addTiles() overwrites options$attribution with it,
+# so an attribution passed through tileOptions() is silently dropped.
+add_basemap <- function(map, dark = FALSE) {
+    urls <- map_tile_urls(dark)
+    # Real tiles stop at zoom 16; request nothing above that and scale up
+    opts <- leaflet::tileOptions(
+        maxZoom = map_max_zoom, maxNativeZoom = map_tile_max_native_zoom
+    )
+    map |>
+        leaflet::addTiles(
+            urlTemplate = urls$base,
+            attribution = map_attribution,
+            layerId = "basemap",
+            options = opts
+        ) |>
+        leaflet::addTiles(urlTemplate = urls$labels, layerId = "labels", options = opts)
 }

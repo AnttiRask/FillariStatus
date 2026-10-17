@@ -132,11 +132,26 @@ test_that("status_colour picks the right palette and handles unknowns", {
     expect_length(status_colour(character()), 0)
 })
 
-test_that("carto_tile_url switches theme and only adds a key when set", {
-    expect_match(carto_tile_url(FALSE), "/light_all/", fixed = TRUE)
-    expect_match(carto_tile_url(TRUE), "/dark_all/", fixed = TRUE)
-    expect_false(grepl("key=", carto_tile_url(TRUE)))
-    expect_match(carto_tile_url(FALSE, key = "abc"), "?key=abc", fixed = TRUE)
+test_that("map_tile_urls gives a base and a labels layer per theme, in Esri's z/y/x order", {
+    light <- map_tile_urls(FALSE)
+    dark <- map_tile_urls(TRUE)
+    expect_named(light, c("base", "labels"))
+    expect_true(endsWith(light$base, "World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"))
+    expect_true(endsWith(light$labels, "World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}"))
+    expect_match(dark$base, "World_Dark_Gray_Base/", fixed = TRUE)
+    expect_match(dark$labels, "World_Dark_Gray_Reference/", fixed = TRUE)
+    # no API key in any URL, and everything comes from the one allowed host
+    expect_false(any(grepl("key=", c(unlist(light), unlist(dark)))))
+    expect_true(all(startsWith(c(unlist(light), unlist(dark)), map_tiles_host)))
+})
+
+test_that("tiles are capped at the last real Esri zoom", {
+    expect_equal(map_tile_max_native_zoom, 16)
+    expect_gte(map_max_zoom, map_tile_max_native_zoom)
+    # the automatic fit never asks for a zoom without real tiles
+    expect_lte(map_max_fit_zoom, map_tile_max_native_zoom)
+    expect_match(map_attribution, "Esri", fixed = TRUE)
+    expect_match(map_attribution, "OpenStreetMap", fixed = TRUE)
 })
 
 test_that("station_popup mirrors the card and escapes names", {
@@ -238,4 +253,33 @@ test_that("the location marker is a ring-and-dot icon in the configured colour",
     expect_false(grepl("[<> ]", sub("^data:image/svg\\+xml;utf8,", "", icon$iconUrl)))
     expect_equal(c(icon$iconWidth, icon$iconHeight), c(28, 28))
     expect_equal(c(icon$iconAnchorX, icon$iconAnchorY), c(14, 14))
+})
+
+test_that("add_basemap adds a base layer with the attribution and a labels layer without", {
+    calls <- leaflet::leaflet() |> add_basemap(FALSE) |> (\(m) m$x$calls)()
+    tiles <- Filter(\(x) x$method == "addTiles", calls)
+    expect_length(tiles, 2)
+    base <- tiles[[1]]$args
+    labels <- tiles[[2]]$args
+
+    expect_equal(base[[2]], "basemap")
+    expect_equal(labels[[2]], "labels")
+    expect_true(endsWith(base[[1]], "World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"))
+    expect_true(endsWith(labels[[1]], "World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}"))
+
+    # The regression: the attribution was lost when passed through tileOptions()
+    expect_equal(base[[4]]$attribution, map_attribution)
+    expect_match(base[[4]]$attribution, "Esri", fixed = TRUE)
+    expect_null(labels[[4]]$attribution)
+
+    # tile requests are capped at the last real zoom, closer views are scaled up
+    expect_equal(base[[4]]$maxNativeZoom, map_tile_max_native_zoom)
+    expect_equal(labels[[4]]$maxNativeZoom, map_tile_max_native_zoom)
+    expect_equal(base[[4]]$maxZoom, map_max_zoom)
+})
+
+test_that("add_basemap switches both layers for dark mode and works on a proxy-style call chain", {
+    tiles <- leaflet::leaflet() |> add_basemap(TRUE) |> (\(m) Filter(\(x) x$method == "addTiles", m$x$calls))()
+    expect_match(tiles[[1]]$args[[1]], "World_Dark_Gray_Base", fixed = TRUE)
+    expect_match(tiles[[2]]$args[[1]], "World_Dark_Gray_Reference", fixed = TRUE)
 })

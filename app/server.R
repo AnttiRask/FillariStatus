@@ -119,30 +119,19 @@ function(input, output, session) {
     # ---- Map ----------------------------------------------------------------
     is_dark <- reactive(identical(input$dark_mode, "dark"))
 
-    tile_options <- tileOptions(
-        subdomains = "abcd", maxZoom = 19, attribution = carto_attribution
-    )
-
     # Base map only; stations are drawn through the proxy below, so panning
     # and zooming survive the 60 s data refresh
     output$map <- renderLeaflet({
-        leaflet() |>
-            addTiles(
-                urlTemplate = carto_tile_url(isolate(is_dark()), carto_api_key),
-                layerId = "basemap",
-                options = tile_options
-            ) |>
+        leaflet(options = leafletOptions(maxZoom = map_max_zoom)) |>
+            add_basemap(isolate(is_dark())) |>
             setView(default_location$lon, default_location$lat, map_default_zoom)
     })
 
     observeEvent(is_dark(), {
         leafletProxy("map") |>
             removeTiles("basemap") |>
-            addTiles(
-                urlTemplate = carto_tile_url(is_dark(), carto_api_key),
-                layerId = "basemap",
-                options = tile_options
-            )
+            removeTiles("labels") |>
+            add_basemap(is_dark())
     }, ignoreInit = TRUE)
 
     # The map sits in a hidden tab, so Shiny doesn't render it until first
