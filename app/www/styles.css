@@ -1,0 +1,27 @@
+:root {
+    --fs-empty: #D55E00;
+    --fs-low: #E69F00;
+    --fs-plenty: #009E73;
+}
+
+.fs-container { max-width: 600px; margin: 0 auto; padding: 1rem; }
+.fs-title { font-size: 1.5rem; margin-bottom: 0.25rem; }
+.fs-meta { color: #6c757d; font-size: 0.85rem; margin-bottom: 1rem; }
+
+.fs-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #dee2e6;
+    border-left: 6px solid #999;
+    border-radius: 0.5rem;
+}
+.fs-card.fs-empty { border-left-color: var(--fs-empty); }
+.fs-card.fs-low { border-left-color: var(--fs-low); }
+.fs-card.fs-plenty { border-left-color: var(--fs-plenty); }
+
+.fs-name { font-weight: 600; }
+.fs-distance, .fs-small { color: #6c757d; font-size: 0.85rem; }
+.fs-count { font-size: 2rem; font-weight: 700; }
