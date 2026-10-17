@@ -6,3 +6,4 @@ renv/library/
 renv/staging/
 _problems/
 testthat-problems.rds
+.claude/scheduled_tasks.lock
