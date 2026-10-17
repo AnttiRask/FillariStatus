@@ -4,7 +4,7 @@
 >
 > **Live:** https://fillaristatus-app-884476669514.europe-north1.run.app · **Repo:** https://github.com/AnttiRask/FillariStatus (public, MIT) · **Project page:** https://youcanbeapirate.com/FillariStatus/
 >
-> **For Claude Code:** read this whole file first. §0 says where the project stands, §12 lists the gotchas that cost time. BiblioStatus (`~/VSCode/BiblioStatus`) is the pattern to reuse. Ask before deploying anything or creating cloud resources, and before touching GitHub secrets, DNS or the repo's visibility.
+> **For Claude Code:** read this whole file first. §0 says where the project stands, §12 lists the gotchas that cost time. BiblioStatus (`~/VSCode/BiblioStatus`) is the pattern to reuse. Pushes to `main` that change `app/**` or the build files **deploy automatically** (GitHub Actions), so run the tests first and batch app changes. Ask before creating or changing cloud resources, GitHub secrets, DNS or the repo's visibility.
 
 *Last updated: 2026-10-17, after the post-launch work (theme, security headers, GitHub hygiene, project page, automatic deploys). Revision 5 is live; the custom-domain certificate is still pending.*
 
@@ -46,9 +46,9 @@
 - **Favourites** (per browser, `localStorage`): a favourite inside the N nearest takes one of the N slots; favourites outside it are added on top. Pinned first. Star on list cards and in map popups.
 - **Map tab** (leaflet, Carto tiles): markers coloured by status with the bike count printed on them, popups mirroring the card (with the favourite star), a ring-and-dot "you are here" marker, drawn through `leafletProxy` so pan/zoom survive the refresh. Shows "Loading map…" until drawn.
 - **Auto-refresh** every 60 s plus "Updated 6 min ago"; manual Refresh button (rate-limited).
-- **Dark mode** (bslib toggle, follows the system), mobile-first single column.
+- **Light by default** with a dark mode toggle (bslib; it used to follow the OS setting), mobile-first single column, youcanbeapirate brand colours and Gotham font (§6).
 - **States:** off-season ("City bike season is over…", not an error), failed refresh with older data (keeps showing it, warns how old), failed first load (plain message, never raw error text), location denied (notice + search), empty search.
-- Footer: HSL / Digitransit CC BY 4.0 attribution, a privacy line, credit.
+- Footer: HSL / Digitransit CC BY 4.0 attribution, a privacy line, links to the sibling projects (BiblioStatus, Gallery of the Day, TrackTeller, TuneTeller) and to the source repo, credit.
 - English UI; all text lives in `app/www/strings.R` so Finnish can be added later.
 
 ### Out of scope (v1)
@@ -112,35 +112,46 @@ Browser ──(location, favourites, search, N)──▶ Shiny server (Cloud Run
 - **Privacy by construction:** favourites live in the browser (`localStorage` ↔ Shiny input `favourites`, try/catch-guarded); the location goes to the server for the distance maths, is held in memory per session, and is never stored or logged (verified by grepping the code). The only server-wide state is the public station cache.
 - **API key stays server-side.** (Carto's tile key does reach the browser inside tile URLs; see §12.)
 - **Cold starts** lose the in-memory cache; the first request just fetches fresh data.
+- **Entry point:** `app/run.R` sets the working directory to `app/`, builds the app with `shinyAppDir()` and wraps its page handler with the security headers (§6). Pushes that touch `app/**` or the build files redeploy automatically (§8).
 - Turso is not used.
 
 ## 5. Repo structure (as built)
 
 ```
 FillariStatus/
+├── README.md  LICENSE         # public README (screenshot, features, run, deploy) and MIT licence
+├── CLAUDE.md                  # guidance for Claude Code: commands, architecture, gotchas
 ├── fillaristatus-plan.md      # this file
-├── DEPLOY.md                  # how to run locally and deploy
+├── DEPLOY.md                  # run locally, deploy, auto-deploy, security headers, domain, Pages
+├── screenshot.png             # README image (list + map, taken at the Rautatientori fallback position)
 ├── Dockerfile  .dockerignore  # allowlist ignore: secrets can't end up in the image
 ├── docker-compose.yml         # local run of the production image on :8083, keys from .Renviron
 ├── deploy.sh                  # Cloud Run deploy (confirm prompt, DRY_RUN=1)
 ├── .Rprofile  renv.lock  renv/ # renv (R 4.6.1)
+├── .gitignore                 # ignores .Renviron, renv/library, test artifacts, the scheduler lock file
 ├── .Renviron                  # git-ignored: DIGITRANSIT_SUBSCRIPTION_KEY, CARTO_API_KEY
+├── .github/
+│   ├── workflows/deploy_shiny_app.yml  # auto-deploy to Cloud Run on pushes touching app/build files; smoke test
+│   └── dependabot.yml                  # weekly updates for the pinned actions and the Docker base image
+├── docs/                      # the project page (GitHub Pages: main, /docs): index.html, screenshot.png, favicon.png
 ├── app/
-│   ├── run.R                  # entry point (PORT env var)
+│   ├── run.R                  # entry point: sets the working dir, builds the app, wraps the page handler with the security headers
 │   ├── global.R               # libraries, sources www/*.R, carto_api_key
-│   ├── ui.R                   # tabs, controls, footer; CSS custom properties; asset() cache-busting
+│   ├── ui.R                   # theme, tabs, controls, footer; CSS custom properties; asset() cache-busting
 │   ├── server.R               # reactive logic, list rendering, map via leafletProxy
 │   └── www/
-│       ├── variables.R        # thresholds, colour palettes, map settings, defaults
+│       ├── variables.R        # thresholds, status + brand palettes, map settings, links, defaults
 │       ├── strings.R          # ALL user-facing text
 │       ├── api.R              # query, fetch, parse, stale fallback, memoised get_stations()
 │       ├── functions.R        # distance, status, nearest, search, formatting, popup/icon helpers, states
+│       ├── security.R         # security headers and with_security_headers()
 │       ├── geolocation.js     # navigator.geolocation → Shiny inputs
 │       ├── favourites.js      # localStorage ↔ Shiny; capture-phase click; re-opens popup after redraw
-│       └── styles.css
+│       ├── styles.css
+│       └── favicon.png  favicon.ico
 └── tests/testthat/
     ├── fixtures/stations.json
-    ├── test-api.R  test-functions.R  test-server.R   # ~170 expectations
+    └── test-api.R  test-functions.R  test-security.R  test-server.R   # 197 expectations (30 / 92 / 23 / 52)
 ```
 
 `app/www/` is served as static files, so the R files in it are downloadable from the running app. They contain no secrets (keys come from the environment).
@@ -177,7 +188,7 @@ FillariStatus/
 ## 7. Testing
 
 - `testthat` 3 with the saved fixture; no live API calls. HTTP mocked with `httr2::local_mocked_responses()`. `testServer()` for the server logic with a configurable `get_stations()` mock (`mock_result`) covering ok / off-season / stale / no-data.
-- Covered: parsing (real fixture, bikes-only counting, empty list), missing key, GraphQL errors, stale fallback and timestamps, haversine, status thresholds, nearest + favourites rules, search, distance formatting, colour/tile/popup/icon helpers (including HTML escaping of station names), state classification, refresh rate-limit, server inputs (location, N 1–20, favourites, search, map readiness, dark mode).
+- 197 expectations in four files (api 30, functions 92, security 23, server 52). Covered: parsing (real fixture, bikes-only counting, empty list), missing key, GraphQL errors, stale fallback and timestamps, haversine, status thresholds, nearest + favourites rules, security headers and the handler wrapper (plain, NULL and promised responses), search, distance formatting, colour/tile/popup/icon helpers (including HTML escaping of station names), state classification, refresh rate-limit, server inputs (location, N 1–20, favourites, search, map readiness, dark mode).
 - Run: `Rscript -e 'testthat::test_dir("tests/testthat", reporter = "summary")'`. Clean up the `_problems/` folder and `testthat-problems.rds` it can leave behind (both git-ignored).
 - **Real-browser checks** were done by driving Chrome (the extension tools): list, map, popups, favourites, search, dark mode, the three data states (via a throwaway harness faking `get_stations()`), the container, and the live site. Not driven: Safari, Firefox, phones.
 - Caveat learned: `testServer()` doesn't step `debounce()` timers for a value that was already read; tests read `searching()`/`nearest()` for the first time *after* the input change, and the live debounce was confirmed in the browser.
@@ -187,7 +198,7 @@ FillariStatus/
 - **GitHub Pages was considered and rejected.** Pages only hosts static files; this is an R Shiny app that needs a server process. A JS rewrite would expose the Digitransit key in the page, lose the shared cache, and discard the built and tested app.
 - **Where:** Google Cloud Run, project `bibliostatus-app` (shared with BiblioStatus, as decided), region `europe-north1`, service `fillaristatus-app`, public (`--allow-unauthenticated`), 1 GiB, `--max-instances 3`, `--concurrency 20`, `--session-affinity`, timeout 3600 s. Revision `fillaristatus-app-00001-kcc` served 100 % of traffic after the first deploy.
 - **Secrets:** Secret Manager `digitransit-subscription-key` (created by `deploy.sh` from `.Renviron`) and the existing `carto-api-key`, both exposed as env vars through `--set-secrets`; the runtime service account `884476669514-compute@developer.gserviceaccount.com` has `secretAccessor`. A `github-deploy` service account already exists in the project (BiblioStatus uses it for Actions).
-- **Image:** `rocker/r-ver:4.6.1` (Ubuntu 24.04), system libraries from Posit Package Manager's sysreqs API, `renv::restore()` from P3M Linux binaries, renv cache **disabled** at build, non-root user `fillari`, ~889 MB. Built by Cloud Build (`gcloud builds submit`), ~7 min.
+- **Image:** `rocker/r-ver:4.6.1` (Ubuntu 24.04), system libraries from Posit Package Manager's sysreqs API, `renv::restore()` from P3M Linux binaries, renv cache **disabled** at build, non-root user `fillari`, ~890 MB compressed in the registry (`docker image ls` shows ~3 GB unpacked). Built by Cloud Build (`gcloud builds submit`), ~7 min.
 - **Deploy:** automatically through GitHub Actions on pushes to `main` that touch `app/**` or the build files (`.github/workflows/deploy_shiny_app.yml`, secrets `GCP_SA_KEY` + `GCP_PROJECT_ID`, pinned actions, serialised runs, smoke test; the first push-triggered run and a manual run both succeeded), or by hand with `./deploy.sh` (asks for confirmation; `DRY_RUN=1` prints the plan). Locally: `docker compose up --build` → http://localhost:8083. The workflow's service account `github-deploy` is shared with BiblioStatus and has broad roles; the workflow uses a second key for it (id starts `59985cf8`); the old key must not be deleted. Workload Identity Federation (keyless) would be the more secure setup.
 - **Custom domain:** `fillaristatus.youcanbeapirate.com` is mapped to the service (`gcloud beta run domain-mappings`), DNS at NS1 has `CNAME fillaristatus -> ghs.googlehosted.com.`. The first certificate attempt ran before the record was visible and Google backed off; the mapping was deleted and recreated with DNS in place (09:21 UTC) to restart issuance. State at 09:28 UTC: certificate pending. Until it works, the `run.app` URL is the address.
 - **Project page:** `docs/` published by GitHub Pages (main, /docs) at https://youcanbeapirate.com/FillariStatus/; verified live (HTTP 200, valid certificate, identical to the repo file).
@@ -215,6 +226,7 @@ FillariStatus/
 6. **Off-season & error states** — Done.
 7. **Docker + Cloud Run deploy** — Done and live.
 8. **README, CLAUDE.md, screenshot, favicon** — Done. Plus an MIT `LICENSE`, and a redeploy (revision 2) with the loading placeholder. The screenshot was taken from `127.0.0.1` (no location permission) so it shows the fallback position, not a real one. Still to decide with the user: GitHub Actions auto-deploy, the custom domain, making the repo public.
+9. **Post-launch** — Done (custom domain certificate pending): GitHub Actions auto-deploy; the youcanbeapirate theme (brand red, Gotham, light by default); security headers; GitHub repository hygiene; the project page on GitHub Pages; the custom domain mapping.
 
 ## 11. Decisions (originally "open questions")
 
@@ -246,6 +258,7 @@ FillariStatus/
 ### Conventions
 - R, tidyverse style (`|>`, `dplyr`, `purrr`, `tidyr`, `stringr`), `renv`. Config (thresholds, colours, defaults, map settings) in `variables.R`; all UI text in `strings.R`.
 - Small commits tied to milestones; after every commit/push verify the remote (`git ls-remote origin refs/heads/main` equals `HEAD`). Never suppress errors in scripts that call GitHub/GCP APIs.
+- **Pushes to `main` that touch `app/**`, `Dockerfile`, `.dockerignore`, `renv.lock`, `.Rprofile` or `renv/activate.R|settings.json` deploy automatically.** Run the tests first, batch app changes into one push, and confirm the run from GitHub. Docs/tests/plan-only pushes don't deploy (checked).
 - Show the user the running app after every visible change (`PORT=8083 Rscript app/run.R`; stop it by port, never `pkill -f app/run.R`, which also matches BiblioStatus' container).
 - When something fails: read the full error, find the root cause, explain it, propose 2–3 ranked fixes, implement the top one; don't retry the same thing.
 
