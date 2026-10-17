@@ -48,7 +48,7 @@ Stop a local server **by port** (`ss -ltnp | grep :8083`), never with `pkill -f 
 Google Cloud Run, project `bibliostatus-app` (shared with BiblioStatus), region `europe-north1`, service `fillaristatus-app`. See `DEPLOY.md`.
 
 - **Pushes to `main` that touch `app/**`, `Dockerfile`, `.dockerignore`, `renv.lock`, `.Rprofile` or `renv/activate.R|settings.json` deploy automatically** (`.github/workflows/deploy_shiny_app.yml`, secrets `GCP_SA_KEY` + `GCP_PROJECT_ID`, ends with a smoke test). Docs/tests/plan pushes don't deploy. Always read a run's status from GitHub (`gh run view <id> --json status,conclusion,jobs`), not from a background task's exit code. Keep the workflow's flags in sync with `deploy.sh`.
-- Custom domain `fillaristatus.youcanbeapirate.com` is mapped; DNS is at NS1 (CNAME to `ghs.googlehosted.com.`). If the certificate stays pending, delete and recreate the mapping (see DEPLOY.md).
+- Custom domain `fillaristatus.youcanbeapirate.com` is live over HTTPS (DNS at NS1: CNAME to `ghs.googlehosted.com.`; the Google-managed certificate renews itself). If a new mapping's certificate stays pending although DNS is right, delete and recreate the mapping (see DEPLOY.md), then require several consecutive successful HTTPS requests before calling it live.
 - The project page is `docs/` published by GitHub Pages at youcanbeapirate.com/FillariStatus/. **Ask the user before** creating cloud resources, deploying, touching GitHub secrets, DNS or the repo's visibility. When running `gcloud` read-only commands, close stdin (`</dev/null`) so an "enable this API?" prompt can't be auto-answered.
 
 ## Gotchas (each cost real time)

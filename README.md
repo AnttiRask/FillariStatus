@@ -20,7 +20,7 @@
 
 ## 🚀 Live App
 
-👉 [Try it here!](https://fillaristatus-app-884476669514.europe-north1.run.app)
+👉 [Try it here!](https://fillaristatus.youcanbeapirate.com)
 
 📄 [Project page](https://youcanbeapirate.com/FillariStatus/)
 

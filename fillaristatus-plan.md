@@ -2,11 +2,11 @@
 
 > A free, fast "nearest city bike stations" app for Helsinki & Espoo, built as a sibling of [BiblioStatus](https://github.com/AnttiRask/BiblioStatus).
 >
-> **Live:** https://fillaristatus-app-884476669514.europe-north1.run.app · **Repo:** https://github.com/AnttiRask/FillariStatus (public, MIT) · **Project page:** https://youcanbeapirate.com/FillariStatus/
+> **Live:** https://fillaristatus.youcanbeapirate.com (also https://fillaristatus-app-884476669514.europe-north1.run.app) · **Repo:** https://github.com/AnttiRask/FillariStatus (public, MIT) · **Project page:** https://youcanbeapirate.com/FillariStatus/
 >
 > **For Claude Code:** read this whole file first. §0 says where the project stands, §12 lists the gotchas that cost time. BiblioStatus (`~/VSCode/BiblioStatus`) is the pattern to reuse. Pushes to `main` that change `app/**` or the build files **deploy automatically** (GitHub Actions), so run the tests first and batch app changes. Ask before creating or changing cloud resources, GitHub secrets, DNS or the repo's visibility.
 
-*Last updated: 2026-10-17, after the post-launch work (theme, security headers, GitHub hygiene, project page, automatic deploys). Revision 5 is live; the custom-domain certificate is still pending.*
+*Last updated: 2026-10-17, after the post-launch work (theme, security headers, GitHub hygiene, project page, automatic deploys) and the custom domain going live. Revision 5 is live.*
 
 ---
 
@@ -22,11 +22,11 @@
 | 6 | Off-season and error states | Done | `72d9c41` |
 | 7 | Docker + Cloud Run deploy | **Done, live** | `d0358e7`, `ca8c2d9`, `40051f3` |
 | 8 | README, CLAUDE.md, screenshot, favicon, MIT licence, redeploy | **Done, live** | `576c627`, `ee53e68` |
-| 9 | Post-launch: GitHub Actions auto-deploy, youcanbeapirate theme, security headers, GitHub hygiene, project page | **Done, live** (custom domain certificate pending) | `b3adaac`, `2d71b9f`, `634b5cf`, `99f3442`, `0792569`, `092838d` |
+| 9 | Post-launch: GitHub Actions auto-deploy, youcanbeapirate theme, security headers, GitHub hygiene, project page | **Done, live** | `b3adaac`, `2d71b9f`, `634b5cf`, `99f3442`, `0792569`, `092838d` |
 
 **Deployed:** revision `fillaristatus-app-00005-qp5` serves 100 % of traffic. Deploys are automatic now: a push to `main` that touches `app/**` or the build files runs the GitHub Actions workflow (build, deploy, smoke test).
 
-**Pending:** the custom domain `fillaristatus.youcanbeapirate.com` is mapped and DNS (NS1) is correct, but Google's certificate is still pending (see §8); the card for FillariStatus on the main site (`AnttiRask.github.io`) was approved and waits until the domain serves HTTPS. Then the user restricts the Carto key to the domain(s) in Carto's dashboard.
+**Pending:** the card for FillariStatus on the main site (`AnttiRask.github.io`) was approved and is the next step now that the domain serves HTTPS. The user restricts the Carto key to the domain(s) in Carto's dashboard.
 
 **Never verified (be honest about these):** phone browsers and Safari/Firefox (only desktop Chrome was driven; the user once reported an intermittent empty map box in "another desktop browser"), behaviour at a real season change (stations are live now), Cloud Run cold-start duration, and Carto's 503 behaviour under bursts.
 
@@ -200,7 +200,7 @@ FillariStatus/
 - **Secrets:** Secret Manager `digitransit-subscription-key` (created by `deploy.sh` from `.Renviron`) and the existing `carto-api-key`, both exposed as env vars through `--set-secrets`; the runtime service account `884476669514-compute@developer.gserviceaccount.com` has `secretAccessor`. A `github-deploy` service account already exists in the project (BiblioStatus uses it for Actions).
 - **Image:** `rocker/r-ver:4.6.1` (Ubuntu 24.04), system libraries from Posit Package Manager's sysreqs API, `renv::restore()` from P3M Linux binaries, renv cache **disabled** at build, non-root user `fillari`, ~890 MB compressed in the registry (`docker image ls` shows ~3 GB unpacked). Built by Cloud Build (`gcloud builds submit`), ~7 min.
 - **Deploy:** automatically through GitHub Actions on pushes to `main` that touch `app/**` or the build files (`.github/workflows/deploy_shiny_app.yml`, secrets `GCP_SA_KEY` + `GCP_PROJECT_ID`, pinned actions, serialised runs, smoke test; the first push-triggered run and a manual run both succeeded), or by hand with `./deploy.sh` (asks for confirmation; `DRY_RUN=1` prints the plan). Locally: `docker compose up --build` → http://localhost:8083. The workflow's service account `github-deploy` is shared with BiblioStatus and has broad roles; the workflow uses a second key for it (id starts `59985cf8`); the old key must not be deleted. Workload Identity Federation (keyless) would be the more secure setup.
-- **Custom domain:** `fillaristatus.youcanbeapirate.com` is mapped to the service (`gcloud beta run domain-mappings`), DNS at NS1 has `CNAME fillaristatus -> ghs.googlehosted.com.`. The first certificate attempt ran before the record was visible and Google backed off; the mapping was deleted and recreated with DNS in place (09:21 UTC) to restart issuance. State at 09:28 UTC: certificate pending. Until it works, the `run.app` URL is the address.
+- **Custom domain: live.** `fillaristatus.youcanbeapirate.com` is mapped to the service (`gcloud beta run domain-mappings`), DNS at NS1 has `CNAME fillaristatus -> ghs.googlehosted.com.`. The first certificate attempt ran before the record was visible and Google backed off; deleting and recreating the mapping with DNS in place (09:21 UTC) got a certificate in ~17 minutes (issuer Google Trust Services, valid to 2027-01-15, auto-renewed). For ~2 minutes after the mapping reported Ready some TLS handshakes still failed, then 10 consecutive connections succeeded. Verified on the domain: HTTP 200, trusted certificate, all security headers, same app version as the `run.app` address, http redirects to https, map with real tiles, favourites, no Shiny errors, and no CSP violations during real use (the only ones seen came from my own `fetch()` test probe, which `connect-src` covers).
 - **Project page:** `docs/` published by GitHub Pages (main, /docs) at https://youcanbeapirate.com/FillariStatus/; verified live (HTTP 200, valid certificate, identical to the repo file).
 - **Repo settings (via the API):** secret scanning + push protection, Dependabot alerts + security updates, `main` protected against force-push and deletion (configuration verified; enforcement not exercised because testing it would rewrite `main`), Actions token read-only by default, actions pinned to SHAs, `dependabot.yml` for Actions and Docker.
 - Observed: cold start 3.3 s, warm response ~0.24 s; Cloud Run logs clean. The only non-2xx used to be `GET /favicon.ico` 404 (44 of them, all before 08:16 UTC); revision 2 serves the favicon and has had no 404s. Revision 2 was verified in Chrome over HTTPS (icons 200, placeholder CSS live, 5 markers with real tiles, favourites, no Shiny errors).
@@ -226,7 +226,7 @@ FillariStatus/
 6. **Off-season & error states** — Done.
 7. **Docker + Cloud Run deploy** — Done and live.
 8. **README, CLAUDE.md, screenshot, favicon** — Done. Plus an MIT `LICENSE`, and a redeploy (revision 2) with the loading placeholder. The screenshot was taken from `127.0.0.1` (no location permission) so it shows the fallback position, not a real one. Still to decide with the user: GitHub Actions auto-deploy, the custom domain, making the repo public.
-9. **Post-launch** — Done (custom domain certificate pending): GitHub Actions auto-deploy; the youcanbeapirate theme (brand red, Gotham, light by default); security headers; GitHub repository hygiene; the project page on GitHub Pages; the custom domain mapping.
+9. **Post-launch** — Done: GitHub Actions auto-deploy; the youcanbeapirate theme (brand red, Gotham, light by default); security headers; GitHub repository hygiene; the project page on GitHub Pages; the custom domain mapping.
 
 ## 11. Decisions (originally "open questions")
 
@@ -280,13 +280,14 @@ FillariStatus/
 - **Geolocation permission can silently differ per loopback origin** (127.0.0.1 vs 127.0.0.2). Screenshots for the repo must force the fallback position with `Shiny.setInputValue('user_location', ...)`, be checked (first station Mannerheimintie, 42 m), and the raw captures deleted. One capture showed the user's real neighbourhood and was discarded.
 - **zsh does not word-split unquoted variables**; shell snippets that loop over `"repo tag"` strings broke. Use explicit arguments or arrays.
 - **`docker image ls` shows the unpacked size (~3 GB)**; the registry's compressed size (~890 MB) is what Cloud Run pulls. A background task's "exit code 0" can be the exit code of a pipe; read the real result (`gh run view`, the log's last line, the registry).
-- **Custom-domain certificates:** if issuance stays pending after DNS is right, delete and recreate the mapping with the record in place to reset Google's retry back-off.
+- **Custom-domain certificates:** if issuance stays pending after DNS is right, delete and recreate the mapping with the record in place to reset Google's retry back-off. After the mapping reports Ready, handshakes can fail for a minute or two while the front ends pick the certificate up: require many consecutive successes (and test with fresh connections) before calling it live.
+- **A CSP probe can cause its own violations:** `fetch()` is governed by `connect-src`, so a test script that fetches tile URLs to measure them produces report-only violations that real use does not. Separate the listener's findings from the probe's.
 - **Platform lag:** GitHub's Dependabot status and Google's certificate state lag behind the API call that changed them; re-check before concluding something failed. `--dry-run` on `git push` does not test server-side branch protection.
 
 ## 13. Next steps (in order)
 The app, the project page, automatic deploys and the security work are done and live. What remains:
-1. **Custom domain:** wait for the certificate (or investigate if it is still pending after ~90 minutes from 08:45 UTC, see §8), verify `https://fillaristatus.youcanbeapirate.com` (valid certificate, headers, app), then switch the README's live link to it.
-2. **Main-site card:** add a FillariStatus card (View App / View Project / View Source) to `AnttiRask.github.io/index.html` (approved by the user; waits for the domain so "View App" works).
+1. ~~Custom domain~~ done (live, see §8). The README and the project page already point at it.
+2. **Main-site card:** add a FillariStatus card (View App / View Project / View Source) to `AnttiRask.github.io/index.html` (approved by the user; the domain now works).
 3. **User:** restrict the Carto key to `fillaristatus.youcanbeapirate.com` (and the run.app address if wanted) in Carto's dashboard.
 4. Optional hardening: Workload Identity Federation with a dedicated least-privilege service account (then delete the new key `59985cf8…`, never the old BiblioStatus one); tighten the report-only CSP into an enforced one; a Cloud Billing budget alert; image/package vulnerability scanning; a test job in the workflow that gates deploys.
 5. v2 candidates from §9: tile retry for Carto 503s, history/patterns, walking time, PWA, Finnish UI; optionally `--min-instances 1`.

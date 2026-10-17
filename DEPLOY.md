@@ -4,7 +4,7 @@ FillariStatus is an R Shiny app, so it needs a server process (GitHub Pages
 can only host static files). It runs on Google Cloud Run in the same GCP
 project as BiblioStatus (`bibliostatus-app`, region `europe-north1`).
 
-**Live:** https://fillaristatus-app-884476669514.europe-north1.run.app
+**Live:** https://fillaristatus.youcanbeapirate.com (the original Cloud Run address https://fillaristatus-app-884476669514.europe-north1.run.app keeps working)
 (Cloud Run service `fillaristatus-app`, project `bibliostatus-app`, region `europe-north1`).
 A custom domain can be mapped later (see below).
 
@@ -129,11 +129,16 @@ DNS for `youcanbeapirate.com` is hosted at NS1; the record is `CNAME fillaristat
 `gcloud beta run domain-mappings describe --domain fillaristatus.youcanbeapirate.com --region europe-north1 --project bibliostatus-app`
 (look at `CertificateProvisioned`).
 
-**State when this was written: certificate still pending.** DNS was correct (resolves to the same Google
-address as BiblioStatus, no CAA records), but the first certificate attempt ran before the DNS record was
-visible and Google backs off its retries (1 min, then 5 min, ...). Deleting and recreating the mapping with the
-DNS record already in place restarts issuance with a fresh retry timer. Until the certificate exists, use the
-`run.app` address.
+**State: live.** The certificate (Google Trust Services, issued 2026-10-17, valid until 2027-01-15, renewed
+automatically by Google) is installed and the domain serves the app with all the security headers. HTTP redirects
+to HTTPS.
+
+**If a new mapping's certificate stays pending even though DNS is right:** the first attempt may have run before
+the DNS record was visible, and Google backs off its retries (1 min, then 5 min, ...). Deleting and recreating the
+mapping with the record already in place restarts issuance with a fresh retry timer; here it took about 17 minutes
+from the recreation to a working certificate. After the mapping reports Ready, connections can fail for a minute or
+two while Google's front ends pick the certificate up (some handshakes fail, then it is stable), so require several
+consecutive successful requests before calling it live.
 
 Once the domain serves HTTPS, restrict the Carto tile key to the domain in Carto's dashboard (the key is
 visible in tile URLs on any public site).
