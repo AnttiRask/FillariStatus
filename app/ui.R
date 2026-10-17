@@ -58,11 +58,12 @@ page_fluid(
             # whitespace between them ("Fillari Status")
             h1(
                 class = "fs-title",
+                # First part in the brand colour, like the youcanbeapirate project pages
                 HTML(paste0(
-                    htmltools::htmlEscape(strings$title_first),
                     '<span class="fs-title-accent">',
-                    htmltools::htmlEscape(strings$title_second),
-                    "</span>"
+                    htmltools::htmlEscape(strings$title_first),
+                    "</span>",
+                    htmltools::htmlEscape(strings$title_second)
                 ))
             ),
             # Light by default (like BiblioStatus); the toggle is still there
