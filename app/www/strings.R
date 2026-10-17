@@ -17,6 +17,7 @@ strings <- list(
     directions       = "Directions",
     tab_list         = "List",
     tab_map          = "Map",
+    loading_map      = "Loading map\u2026",
     you_are_here     = "You are here",
     bike_one         = "bike",
     bike_many        = "bikes",

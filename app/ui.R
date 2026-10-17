@@ -19,7 +19,10 @@ page_fluid(
     theme = bs_theme(version = 5, primary = "#0072B2"),
     tags$head(
         tags$style(HTML(paste0(
-            ":root{", status_css(status_colours$light), "}",
+            ":root{", status_css(status_colours$light),
+            # The map placeholder text lives in strings.R, like all UI text
+            "--fs-map-loading:",
+            jsonlite::toJSON(strings$loading_map, auto_unbox = TRUE), ";}",
             "[data-bs-theme=dark]{", status_css(status_colours$dark), "}"
         ))),
         tags$link(rel = "stylesheet", href = asset("styles.css")),
