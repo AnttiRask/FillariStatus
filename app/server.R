@@ -127,11 +127,18 @@ function(input, output, session) {
             )
     }, ignoreInit = TRUE)
 
+    # The map sits in a hidden tab, so Shiny doesn't render it until first
+    # shown, and leaflet drops proxy messages for a map that doesn't exist yet.
+    # Leaflet reports its bounds once it does, which is our cue to start drawing.
+    map_ready <- reactiveVal(FALSE)
+    observeEvent(input$map_bounds, map_ready(TRUE), once = TRUE)
+
     # Only re-fit the view when the set of stations or the location changes
     last_fit <- reactiveVal(NULL)
     observeEvent(input$tab, last_fit(NULL))
 
     observe({
+        req(map_ready())
         res <- stations()
         req(res$data)
         st <- nearest()

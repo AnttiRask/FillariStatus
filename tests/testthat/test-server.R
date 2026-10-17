@@ -114,8 +114,25 @@ test_that("a search with no matches gives an empty list", {
     })
 })
 
+test_that("markers are only drawn once leaflet reports the map exists", {
+    testServer(server_fn, {
+        session$flushReact()
+        expect_false(map_ready())
+        expect_null(last_fit())
+
+        session$setInputs(map_bounds = list(north = 60.2, east = 25, south = 60.1, west = 24.9))
+        session$flushReact()
+        expect_true(map_ready())
+        # The first draw fitted the view to the stations
+        expect_false(is.null(last_fit()))
+    })
+})
+
 test_that("the map code path runs for tab, dark mode and location changes", {
     testServer(server_fn, {
+        session$setInputs(
+            map_bounds = list(north = 60.2, east = 25, south = 60.1, west = 24.9)
+        )
         session$setInputs(tab = "map", dark_mode = "dark")
         expect_true(is_dark())
         session$setInputs(user_location = list(lat = 60.17, lon = 24.94))

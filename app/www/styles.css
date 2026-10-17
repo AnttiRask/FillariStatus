@@ -79,3 +79,6 @@
     font-size: 0.8rem;
 }
 .fs-footer p { margin-bottom: 0.25rem; }
+
+/* Breathing room between the List/Map tabs and the first card / the map */
+.fs-container .tab-content { padding-top: 1rem; }
