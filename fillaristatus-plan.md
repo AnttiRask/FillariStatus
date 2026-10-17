@@ -26,7 +26,9 @@
 
 **Deployed:** revision `fillaristatus-app-00005-qp5` serves 100 % of traffic. Deploys are automatic now: a push to `main` that touches `app/**` or the build files runs the GitHub Actions workflow (build, deploy, smoke test).
 
-**Pending:** the card for FillariStatus on the main site (`AnttiRask.github.io`) was approved and is the next step now that the domain serves HTTPS. The user restricts the Carto key to the domain(s) in Carto's dashboard.
+**Also done:** the FillariStatus card was added to the main site's featured apps (`AnttiRask.github.io`, commit `ad3c4f4`; View App / View Project / View Source all verified, 200).
+
+**Remaining (user):** restrict the Carto tile key to the FillariStatus domain(s) in Carto's dashboard. Everything else open is optional (§13).
 
 **Never verified (be honest about these):** phone browsers and Safari/Firefox (only desktop Chrome was driven; the user once reported an intermittent empty map box in "another desktop browser"), behaviour at a real season change (stations are live now), Cloud Run cold-start duration, and Carto's 503 behaviour under bursts.
 
@@ -250,7 +252,7 @@ FillariStatus/
 | Theme | youcanbeapirate brand red, Gotham (as the BiblioStatus app), **light by default**, lighter red links in dark mode, status colours unchanged |
 | Security headers | Wrap the page handler (enforced framing/referrer/permissions/HSTS + report-only CSP) |
 | GitHub hygiene | Secret scanning, push protection, Dependabot, protected `main`, SHA-pinned actions |
-| Project page | Yes: `docs/` on GitHub Pages; plus a card on the main site once the domain works |
+| Project page | Yes: `docs/` on GitHub Pages, plus a card on the main site (both done) |
 | Deploy credential | A second key for the existing `github-deploy` account (same pattern as BiblioStatus); keyless WIF noted as the hardening option |
 
 ## 12. Conventions and lessons learned
@@ -287,7 +289,7 @@ FillariStatus/
 ## 13. Next steps (in order)
 The app, the project page, automatic deploys and the security work are done and live. What remains:
 1. ~~Custom domain~~ done (live, see §8). The README and the project page already point at it.
-2. **Main-site card:** add a FillariStatus card (View App / View Project / View Source) to `AnttiRask.github.io/index.html` (approved by the user; the domain now works).
+2. ~~Main-site card~~ done (live on youcanbeapirate.com).
 3. **User:** restrict the Carto key to `fillaristatus.youcanbeapirate.com` (and the run.app address if wanted) in Carto's dashboard.
 4. Optional hardening: Workload Identity Federation with a dedicated least-privilege service account (then delete the new key `59985cf8…`, never the old BiblioStatus one); tighten the report-only CSP into an enforced one; a Cloud Billing budget alert; image/package vulnerability scanning; a test job in the workflow that gates deploys.
 5. v2 candidates from §9: tile retry for Carto 503s, history/patterns, walking time, PWA, Finnish UI; optionally `--min-instances 1`.
