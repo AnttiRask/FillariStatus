@@ -6,7 +6,7 @@
 >
 > **For Claude Code:** read this whole file first. §0 says where the project stands, §12 lists the gotchas that cost time. BiblioStatus (`~/VSCode/BiblioStatus`) is the pattern to reuse. Pushes to `main` that change `app/**` or the build files **deploy automatically** (GitHub Actions), so run the tests first and batch app changes. Ask before creating or changing cloud resources, GitHub secrets, DNS or the repo's visibility.
 
-*Last updated: 2026-10-17, after the post-launch work (theme, security headers, GitHub hygiene, project page, automatic deploys) and the custom domain going live. Revision 5 is live.*
+*Last updated: 2026-10-17, after the post-launch work (theme, security headers, GitHub hygiene, project page, automatic deploys, the custom domain, and the switch to keyless Esri map tiles). Revision 6 is live.*
 
 ---
 
@@ -24,9 +24,9 @@
 | 8 | README, CLAUDE.md, screenshot, favicon, MIT licence, redeploy | **Done, live** | `576c627`, `ee53e68` |
 | 9 | Post-launch: GitHub Actions auto-deploy, youcanbeapirate theme, security headers, GitHub hygiene, project page, keyless Esri map tiles (and the missing tile attribution fixed) | **Done, live** | `b3adaac`, `2d71b9f`, `634b5cf`, `99f3442`, `0792569`, `092838d` |
 
-**Deployed:** revision `fillaristatus-app-00005-qp5` serves 100 % of traffic. Deploys are automatic now: a push to `main` that touches `app/**` or the build files runs the GitHub Actions workflow (build, deploy, smoke test).
+**Deployed:** revision `fillaristatus-app-00006-l94` serves 100 % of traffic (the Esri map tiles; the service now has the Digitransit secret only). Deploys are automatic now: a push to `main` that touches `app/**` or the build files runs the GitHub Actions workflow (build, deploy, smoke test).
 
-**Also done:** the FillariStatus card was added to the main site's featured apps (`AnttiRask.github.io`, commit `ad3c4f4`; View App / View Project / View Source all verified, 200).
+**Also done:** the FillariStatus card is on the main site (`AnttiRask.github.io`, added in `ad3c4f4`, moved directly below the BiblioStatus card in `1e673fc`; View App / View Project / View Source all verified, 200).
 
 **Remaining (user):** nothing required. The map tiles switched to Esri's keyless World Light/Dark Gray (§6, §8), so there is no Carto key to restrict (the user lost dashboard access after the trial). BiblioStatus still uses the Carto key, which has the same problem; the same switch would fix it. Everything else open is optional (§13).
 
@@ -153,7 +153,7 @@ FillariStatus/
 │       └── favicon.png  favicon.ico
 └── tests/testthat/
     ├── fixtures/stations.json
-    └── test-api.R  test-functions.R  test-security.R  test-server.R   # 197 expectations (30 / 92 / 23 / 52)
+    └── test-api.R  test-functions.R  test-security.R  test-server.R   # 220 expectations (30 / 113 / 25 / 52)
 ```
 
 `app/www/` is served as static files, so the R files in it are downloadable from the running app. They contain no secrets (keys come from the environment).
@@ -197,7 +197,7 @@ FillariStatus/
 ## 7. Testing
 
 - `testthat` 3 with the saved fixture; no live API calls. HTTP mocked with `httr2::local_mocked_responses()`. `testServer()` for the server logic with a configurable `get_stations()` mock (`mock_result`) covering ok / off-season / stale / no-data.
-- 197 expectations in four files (api 30, functions 92, security 23, server 52). Covered: parsing (real fixture, bikes-only counting, empty list), missing key, GraphQL errors, stale fallback and timestamps, haversine, status thresholds, nearest + favourites rules, security headers and the handler wrapper (plain, NULL and promised responses), search, distance formatting, colour/tile/popup/icon helpers (including HTML escaping of station names), state classification, refresh rate-limit, server inputs (location, N 1–20, favourites, search, map readiness, dark mode).
+- 220 expectations in four files (api 30, functions 113, security 25, server 52). Covered: parsing (real fixture, bikes-only counting, empty list), missing key, GraphQL errors, stale fallback and timestamps, haversine, status thresholds, nearest + favourites rules, security headers and the handler wrapper (plain, NULL and promised responses), search, distance formatting, colour/tile/popup/icon helpers (including HTML escaping of station names), state classification, refresh rate-limit, server inputs (location, N 1–20, favourites, search, map readiness, dark mode).
 - Run: `Rscript -e 'testthat::test_dir("tests/testthat", reporter = "summary")'`. Clean up the `_problems/` folder and `testthat-problems.rds` it can leave behind (both git-ignored).
 - **Real-browser checks** were done by driving Chrome (the extension tools): list, map, popups, favourites, search, dark mode, the three data states (via a throwaway harness faking `get_stations()`), the container, and the live site. Not driven: Safari, Firefox, phones.
 - Caveat learned: `testServer()` doesn't step `debounce()` timers for a value that was already read; tests read `searching()`/`nearest()` for the first time *after* the input change, and the live debounce was confirmed in the browser.
@@ -235,7 +235,7 @@ FillariStatus/
 6. **Off-season & error states** — Done.
 7. **Docker + Cloud Run deploy** — Done and live.
 8. **README, CLAUDE.md, screenshot, favicon** — Done. Plus an MIT `LICENSE`, and a redeploy (revision 2) with the loading placeholder. The screenshot was taken from `127.0.0.1` (no location permission) so it shows the fallback position, not a real one. Still to decide with the user: GitHub Actions auto-deploy, the custom domain, making the repo public.
-9. **Post-launch** — Done: GitHub Actions auto-deploy; the youcanbeapirate theme (brand red, Gotham, light by default); security headers; GitHub repository hygiene; the project page on GitHub Pages; the custom domain mapping.
+9. **Post-launch** — Done: GitHub Actions auto-deploy; the youcanbeapirate theme (brand red, Gotham, light by default); security headers; GitHub repository hygiene; the project page on GitHub Pages; the custom domain (live); keyless Esri map tiles replacing the Carto key (and the missing tile attribution fixed).
 
 ## 11. Decisions (originally "open questions")
 

@@ -37,13 +37,14 @@ Browser ──(location, favourites, search)──▶ Shiny server (Google Cloud
 
 - One cached upstream call per minute serves every visitor, so the app is gentle on the Digitransit API.
 - If a refresh fails, the last good data stays on screen with a warning instead of an error.
+- The page is served with browser-protection headers (clickjacking, referrer, permissions, HSTS and a report-only content security policy), set in `app/www/security.R`.
 - There is no database and no accounts. Favourites live in your browser's `localStorage`; your location is used in memory to find nearby stations and is not stored.
 
 ## 📁 Project Structure
 
 ```bash
 app/
-├── run.R             # entry point (PORT env var)
+├── run.R             # entry point: sets the working dir, wraps the page handler with the security headers (PORT env var)
 ├── global.R          # libraries, config
 ├── ui.R              # layout: controls, List/Map tabs, footer
 ├── server.R          # reactive logic, list rendering, map via leafletProxy
@@ -51,14 +52,14 @@ app/
     ├── api.R         # Digitransit query, parsing, cached get_stations() with stale fallback
     ├── security.R    # security headers, wrapped around the page handler in run.R
     ├── functions.R   # distances, status colours, nearest/search logic, formatting, popup + icon helpers
-    ├── variables.R   # thresholds, colour palettes, map settings
+    ├── variables.R   # thresholds, status + brand palettes, map settings, links
     ├── strings.R     # all user-facing text (one place, ready for translation)
     ├── geolocation.js, favourites.js, styles.css, favicon.*
 tests/testthat/       # unit and server tests against a saved real API response
 docs/                 # the project page (GitHub Pages: main branch, /docs folder)
 .github/              # deploy workflow (Cloud Run) and Dependabot config
 Dockerfile, docker-compose.yml, deploy.sh, DEPLOY.md
-fillaristatus-plan.md # project plan and history
+fillaristatus-plan.md # project plan and history; CLAUDE.md has guidance for Claude Code
 ```
 
 ## 💻 Run Locally
@@ -73,7 +74,10 @@ Then either:
 
 ```r
 renv::restore()
-shiny::runApp("app/", port = 8083)
+```
+
+```bash
+PORT=8083 Rscript app/run.R   # same entry point as production, including the security headers
 ```
 
 or, with Docker (the same image Cloud Run uses):
@@ -90,11 +94,11 @@ and open http://localhost:8083. Browsers only allow geolocation on `localhost` o
 testthat::test_dir("tests/testthat")
 ```
 
-The tests use a saved real API response, so they never call the live API.
+About 220 expectations covering the data layer, the logic, the server and the security headers. They use a saved real API response, so they never call the live API.
 
 ## ☁️ Deployment
 
-The app runs on Google Cloud Run. See [DEPLOY.md](DEPLOY.md) for the secrets, `deploy.sh` and the custom-domain steps.
+The app runs on Google Cloud Run. A push to `main` that changes the app or its build files deploys automatically through GitHub Actions (build, deploy, smoke test); docs-only pushes don't. See [DEPLOY.md](DEPLOY.md) for the secret, `deploy.sh`, the workflow and the custom-domain steps.
 
 ## 📊 Data
 
