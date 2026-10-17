@@ -78,11 +78,16 @@ test_that("an API error falls back to the last good data", {
     good <- fetch_stations_safe(fetch = fixture)
     expect_false(good$stale)
     expect_null(good$error)
+    expect_s3_class(good$attempted_at, "POSIXct")
+    expect_equal(good$attempted_at, good$fetched_at)
 
     bad <- fetch_stations_safe(fetch = function() stop("network down"))
     expect_true(bad$stale)
     expect_equal(bad$error, "network down")
     expect_equal(bad$data, good$data)
+    # The old data keeps its own timestamp; the failed attempt gets a new one
+    expect_equal(bad$fetched_at, good$fetched_at)
+    expect_gte(bad$attempted_at, good$attempted_at)
 })
 
 test_that("an API error with no prior data returns NULL data", {
@@ -91,4 +96,6 @@ test_that("an API error with no prior data returns NULL data", {
     expect_false(bad$stale)
     expect_null(bad$data)
     expect_equal(bad$error, "network down")
+    expect_null(bad$fetched_at)
+    expect_s3_class(bad$attempted_at, "POSIXct")
 })

@@ -21,13 +21,33 @@ function(input, output, session) {
     })
 
     observeEvent(input$refresh, {
-        fetched_at <- get_stations()$fetched_at
-        age <- if (is.null(fetched_at)) Inf else as.numeric(difftime(Sys.time(), fetched_at, units = "secs"))
+        # Rate-limit on the last *attempt* (successful or not), so repeated
+        # clicks during an outage don't each fire a slow, failing request
         # The cache is shared by all sessions, so don't let a click hammer upstream
-        if (age >= min_manual_refresh_s) {
+        if (should_refetch(get_stations()$attempted_at)) {
             memoise::forget(get_stations)
         }
         refresh_count(refresh_count() + 1)
+    })
+
+    state <- reactive(stations_state(stations()))
+
+    # Off-season, a failed refresh and a failed first load each get their own
+    # message; none of them is shown as a crash
+    output$data_notice <- renderUI({
+        switch(
+            state(),
+            off_season = div(class = "alert alert-info", role = "status", strings$season_over),
+            stale = {
+                age <- difftime(Sys.time(), stations()$fetched_at, units = "secs")
+                div(
+                    class = "alert alert-warning", role = "status",
+                    sprintf(strings$stale_data, format_age(age))
+                )
+            },
+            error = div(class = "alert alert-warning", role = "status", strings$no_data),
+            NULL
+        )
     })
 
     output$location_notice <- renderUI({
@@ -55,16 +75,20 @@ function(input, output, session) {
         if (is.null(fetched_at)) {
             return(strings$no_data_yet)
         }
-        sprintf(strings$updated, as.integer(difftime(Sys.time(), fetched_at, units = "secs")))
+        sprintf(strings$updated, format_age(difftime(Sys.time(), fetched_at, units = "secs")))
     })
 
     output$station_list <- renderUI({
-        if (is.null(stations()$data)) {
-            return(div(class = "fs-notice", strings$no_data))
+        # Off-season and error states are explained by the notice above the tabs
+        if (!state() %in% c("ok", "stale")) {
+            return(NULL)
         }
         st <- nearest()
         if (nrow(st) == 0) {
-            return(div(class = "fs-notice", strings$no_matches))
+            return(div(
+                class = "fs-notice",
+                if (searching()) strings$no_matches else strings$none_available
+            ))
         }
 
         tagList(lapply(seq_len(nrow(st)), function(i) {

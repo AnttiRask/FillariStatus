@@ -50,6 +50,7 @@ page_fluid(
             actionLink("refresh", strings$refresh),
             tags$a(id = "locate", href = "#", strings$locate)
         ),
+        uiOutput("data_notice"),
         uiOutput("location_notice"),
         navset_underline(
             id = "tab",

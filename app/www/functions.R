@@ -143,3 +143,35 @@ station_popup <- function(station, strings) {
         )
     ))
 }
+
+# What the app should show for a get_stations() result:
+#   "ok"         stations to show
+#   "off_season" no stations (the bike season is over), not an error
+#   "stale"      the latest refresh failed, showing older data
+#   "error"      the fetch failed and there is no data at all
+stations_state <- function(res) {
+    if (is.null(res$data)) {
+        return("error")
+    }
+    if (nrow(res$data) == 0) {
+        return("off_season")
+    }
+    if (!is.null(res$error)) "stale" else "ok"
+}
+
+# 45 -> "45 s", 400 -> "6 min", 7300 -> "2 h"
+format_age <- function(seconds) {
+    seconds <- max(0, as.integer(seconds))
+    dplyr::case_when(
+        seconds < 60   ~ paste(seconds, "s"),
+        seconds < 3600 ~ paste(seconds %/% 60, "min"),
+        .default       = paste(seconds %/% 3600, "h")
+    )
+}
+
+# Whether a manual refresh may re-fetch, given when the cache last *tried* to
+# (successfully or not)
+should_refetch <- function(attempted_at, now = Sys.time(), min_age = min_manual_refresh_s) {
+    is.null(attempted_at) ||
+        as.numeric(difftime(now, attempted_at, units = "secs")) >= min_age
+}

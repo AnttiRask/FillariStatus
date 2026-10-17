@@ -19,8 +19,29 @@ fixture_body <- jsonlite::read_json(
     simplifyVector = FALSE
 )
 fixture_stations <- server_env$parse_stations(fixture_body)
-server_env$get_stations <- function() {
-    list(data = fixture_stations, stale = FALSE, error = NULL, fetched_at = Sys.time())
+# The mock lives in server_env so the server code (and the mock itself) see
+# the same variables. Tests swap `mock_result` to simulate off-season, a
+# failed refresh, or no data at all.
+server_env$fixture_stations <- fixture_stations
+server_env$mock_result <- NULL
+local(
+    {
+        ok_result <- function() {
+            now <- Sys.time()
+            list(
+                data = fixture_stations, stale = FALSE, error = NULL,
+                fetched_at = now, attempted_at = now
+            )
+        }
+        get_stations <- function() mock_result %||% ok_result()
+    },
+    envir = server_env
+)
+
+with_result <- function(result, code) {
+    server_env$mock_result <- result
+    on.exit(server_env$mock_result <- NULL)
+    force(code)
 }
 server_fn <- source(here::here("app/server.R"), local = server_env)$value
 
@@ -165,5 +186,76 @@ test_that("searching is false for no search and for blank input", {
         session$setInputs(search = "   ")
         session$elapse(500)
         expect_false(searching())
+    })
+})
+
+html_of <- function(x) as.character(x$html)
+
+test_that("off-season shows a friendly message, not an error", {
+    now <- Sys.time()
+    result <- list(
+        data = server_env$empty_stations(), stale = FALSE, error = NULL,
+        fetched_at = now, attempted_at = now
+    )
+    with_result(result, testServer(server_fn, {
+        session$flushReact()
+        expect_equal(state(), "off_season")
+        expect_match(html_of(output$data_notice), "season is over", fixed = TRUE)
+        expect_false(grepl("alert-warning", html_of(output$data_notice)))
+        expect_null(output$station_list$html)
+        expect_equal(output$updated, "Updated 0 s ago")
+    }))
+})
+
+test_that("a failed refresh keeps the old data and warns that it may be stale", {
+    old <- Sys.time() - 400
+    result <- list(
+        data = fixture_stations, stale = TRUE, error = "network down",
+        fetched_at = old, attempted_at = Sys.time()
+    )
+    with_result(result, testServer(server_fn, {
+        session$flushReact()
+        expect_equal(state(), "stale")
+        notice <- html_of(output$data_notice)
+        expect_match(notice, "alert-warning", fixed = TRUE)
+        expect_match(notice, "6 min", fixed = TRUE)
+        expect_match(notice, "out of date", fixed = TRUE)
+        # The stations are still listed
+        expect_match(html_of(output$station_list), "fs-card", fixed = TRUE)
+        expect_equal(output$updated, "Updated 6 min ago")
+    }))
+})
+
+test_that("with no data at all, a friendly message is shown and nothing crashes", {
+    result <- list(
+        data = NULL, stale = FALSE, error = "network down",
+        fetched_at = NULL, attempted_at = Sys.time()
+    )
+    with_result(result, testServer(server_fn, {
+        session$flushReact()
+        expect_equal(state(), "error")
+        expect_match(html_of(output$data_notice), "Refresh", fixed = TRUE)
+        expect_false(grepl("network down", html_of(output$data_notice)))
+        expect_null(output$station_list$html)
+        expect_equal(output$updated, "No data yet")
+        # Drawing on the map is skipped quietly
+        session$setInputs(map_bounds = list(north = 60.2, east = 25, south = 60.1, west = 24.9))
+        session$flushReact()
+    }))
+})
+
+test_that("normal data shows no data notice", {
+    testServer(server_fn, {
+        session$flushReact()
+        expect_equal(state(), "ok")
+        expect_null(output$data_notice$html)
+    })
+})
+
+test_that("an empty list is explained differently when searching", {
+    testServer(server_fn, {
+        session$setInputs(search = "zzzz-no-such-station")
+        session$elapse(500)
+        expect_match(html_of(output$station_list), "match your search", fixed = TRUE)
     })
 })

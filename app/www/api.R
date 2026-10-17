@@ -90,14 +90,18 @@ parse_stations <- function(body) {
 # Last successful result, so a failed refresh can fall back to stale data
 .last_good <- new.env(parent = emptyenv())
 
-# Returns list(data, stale, error, fetched_at); never throws.
+# Returns list(data, stale, error, fetched_at, attempted_at); never throws.
+# `fetched_at` is when `data` was last fetched successfully; `attempted_at` is
+# when this call tried, so failed attempts can be rate-limited too.
 # `data` is NULL only if there has never been a successful fetch.
 fetch_stations_safe <- function(fetch = fetch_stations_raw) {
     tryCatch(
         {
             data <- fetch() |> parse_stations()
+            now <- Sys.time()
             res <- list(
-                data = data, stale = FALSE, error = NULL, fetched_at = Sys.time()
+                data = data, stale = FALSE, error = NULL,
+                fetched_at = now, attempted_at = now
             )
             .last_good$value <- res
             res
@@ -105,10 +109,11 @@ fetch_stations_safe <- function(fetch = fetch_stations_raw) {
         error = function(e) {
             prev <- .last_good$value
             list(
-                data       = prev$data,
-                stale      = !is.null(prev),
-                error      = conditionMessage(e),
-                fetched_at = prev$fetched_at
+                data         = prev$data,
+                stale        = !is.null(prev),
+                error        = conditionMessage(e),
+                fetched_at   = prev$fetched_at,
+                attempted_at = Sys.time()
             )
         }
     )

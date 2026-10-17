@@ -185,3 +185,42 @@ test_that("the popup carries a favourite star for its station", {
     expect_match(html, 'class="fs-fav is-fav"', fixed = TRUE)
     expect_match(html, 'data-station-id="smoove:077"', fixed = TRUE)
 })
+
+test_that("stations_state distinguishes ok, off-season, stale and error", {
+    some <- tibble::tibble(station_id = "a")
+    none <- tibble::tibble(station_id = character())
+    expect_equal(stations_state(list(data = some, error = NULL)), "ok")
+    expect_equal(stations_state(list(data = none, error = NULL)), "off_season")
+    expect_equal(stations_state(list(data = some, error = "boom")), "stale")
+    expect_equal(stations_state(list(data = NULL, error = "boom")), "error")
+    # Off-season data we couldn't refresh is still just off-season
+    expect_equal(stations_state(list(data = none, error = "boom")), "off_season")
+})
+
+test_that("format_age picks a readable unit", {
+    expect_equal(format_age(0), "0 s")
+    expect_equal(format_age(45), "45 s")
+    expect_equal(format_age(60), "1 min")
+    expect_equal(format_age(400), "6 min")
+    expect_equal(format_age(3600), "1 h")
+    expect_equal(format_age(7300), "2 h")
+    expect_equal(format_age(-5), "0 s")
+    expect_equal(format_age(as.difftime(125, units = "secs")), "2 min")
+})
+
+test_that("should_refetch rate-limits on the last attempt", {
+    now <- Sys.time()
+    expect_true(should_refetch(NULL, now))
+    expect_false(should_refetch(now - 3, now, min_age = 10))
+    expect_true(should_refetch(now - 10, now, min_age = 10))
+    expect_true(should_refetch(now - 300, now, min_age = 10))
+})
+
+test_that("nearest_stations copes with an empty station list", {
+    empty <- tibble::tibble(
+        station_id = character(), name = character(), lat = double(), lon = double(),
+        bikes = integer(), allow_pickup = logical(), operative = logical()
+    )
+    out <- nearest_stations(empty, 60.17, 24.94, n = 5, favourites = "x")
+    expect_equal(nrow(out), 0)
+})
