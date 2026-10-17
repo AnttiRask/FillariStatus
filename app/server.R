@@ -88,7 +88,7 @@ function(input, output, session) {
                         ),
                         paste0(s$name, " (", station_number(s$station_id), ")")
                     ),
-                    div(class = "fs-distance", paste0(round(s$distance_m), " m")),
+                    div(class = "fs-distance", format_distance(s$distance_m)),
                     tags$a(
                         class = "fs-directions",
                         href = directions_url,

@@ -89,3 +89,18 @@ test_that("station_number drops the network prefix", {
     expect_equal(station_number(c("smoove:077", "smoove:900")), c("077", "900"))
     expect_equal(station_number("123"), "123")
 })
+
+test_that("format_distance uses m below 1 km and km with a decimal comma above", {
+    expect_equal(format_distance(0), "0 m")
+    expect_equal(format_distance(41.9), "42 m")
+    expect_equal(format_distance(999.4), "999 m")
+    expect_equal(format_distance(999.6), "1,00 km")
+    expect_equal(format_distance(1000), "1,00 km")
+    expect_equal(format_distance(1636), "1,64 km")
+    expect_equal(format_distance(1600), "1,60 km")
+    expect_equal(format_distance(12345), "12,35 km")
+    expect_equal(
+        format_distance(c(250, 1636)),
+        c("250 m", "1,64 km")
+    )
+})

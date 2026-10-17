@@ -65,3 +65,15 @@ filter_by_name <- function(stations, query) {
         )
     )
 }
+
+# Whole metres below 1 km, kilometres with two decimals (decimal comma) from
+# 1 km up, e.g. 642 -> "642 m", 1636 -> "1,64 km". Rounds first so 999.6 m
+# becomes "1,00 km" rather than "1000 m".
+format_distance <- function(metres) {
+    metres <- round(metres)
+    dplyr::if_else(
+        metres < 1000,
+        paste0(metres, " m"),
+        paste0(format(round(metres / 1000, 2), nsmall = 2, decimal.mark = ","), " km")
+    )
+}
