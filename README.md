@@ -96,6 +96,10 @@ The app runs on Google Cloud Run. See [DEPLOY.md](DEPLOY.md) for the secrets, `d
 
 Station data © [HSL](https://www.hsl.fi/) / [Digitransit](https://digitransit.fi/), licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Map tiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors © [CARTO](https://carto.com/attributions).
 
+## 📄 License
+
+- [MIT](LICENSE)
+
 ## 👤 Author
 
 Created by [Antti Rask](https://www.linkedin.com/in/AnttiRask/) · [youcanbeapirate.com](https://youcanbeapirate.com)
