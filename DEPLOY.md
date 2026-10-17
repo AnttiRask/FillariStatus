@@ -4,6 +4,10 @@ FillariStatus is an R Shiny app, so it needs a server process (GitHub Pages
 can only host static files). It runs on Google Cloud Run in the same GCP
 project as BiblioStatus (`bibliostatus-app`, region `europe-north1`).
 
+**Live:** https://fillaristatus-app-884476669514.europe-north1.run.app
+(Cloud Run service `fillaristatus-app`, project `bibliostatus-app`, region `europe-north1`).
+A custom domain can be mapped later (see below).
+
 ## Secrets
 
 | Variable | Where it lives | Used for |
