@@ -26,9 +26,11 @@
 
 **Deployed:** revision `fillaristatus-app-00006-l94` serves 100 % of traffic (the Esri map tiles; the service now has the Digitransit secret only). Deploys are automatic now: a push to `main` that touches `app/**` or the build files runs the GitHub Actions workflow (build, deploy, smoke test).
 
-**Also done:** the FillariStatus card is on the main site (`AnttiRask.github.io`, added in `ad3c4f4`, moved directly below the BiblioStatus card in `1e673fc`; View App / View Project / View Source all verified, 200).
+**Also done:** the FillariStatus card is on the main site (`AnttiRask.github.io`, added in `ad3c4f4`, moved directly below the BiblioStatus card; a first attempt, `1e673fc`, nested it and the cards after it inside the BiblioStatus card, and `0ace6b2` fixed that — see §12; View App / View Project / View Source all verified, 200).
 
-**Remaining (user):** nothing required. The map tiles switched to Esri's keyless World Light/Dark Gray (§6, §8), so there is no Carto key to restrict (the user lost dashboard access after the trial). BiblioStatus still uses the Carto key, which has the same problem; the same switch would fix it. Everything else open is optional (§13).
+**BiblioStatus (the sibling app) was switched to the same keyless Esri tiles** (repo `AnttiRask/BiblioStatus`, commits `950ecd1`, `0047b33`; revision `bibliostatus-app-00295-7cw`, verified live: Esri host only, attribution shown, nothing above tile zoom 16, no Carto request, the service has only the two Turso secrets). Its map's dark mode never worked (`isTRUE(input$dark_mode)` on bslib's string value, introduced when `0242f04` silenced an error); `e9add2d` fixes it with an `is_dark()` reactive and regression tests (80 tests pass; verified locally with real clicks); its deploy was still running when this was written.
+
+**Remaining (user):** nothing required. Optional clean-up now that no app uses the Carto key (do not delete without deciding): the Secret Manager secret `carto-api-key`, the GitHub Actions secret `CARTO_API_KEY` in `AnttiRask/BiblioStatus`, and the `CARTO_API_KEY` lines in the local gitignored files (`~/VSCode/BiblioStatus/app/secret.R`, this repo's `.Renviron`). Everything else open is optional (§13).
 
 **Never verified (be honest about these):** phone browsers and Safari/Firefox (only desktop Chrome was driven; the user once reported an intermittent empty map box in "another desktop browser"), behaviour at a real season change (stations are live now), Cloud Run cold-start duration, and Esri's availability and current terms for the keyless tiles (no SLA; I could not read the terms from here).
 
@@ -295,11 +297,18 @@ FillariStatus/
 - **A CSP probe can cause its own violations:** `fetch()` is governed by `connect-src`, so a test script that fetches tile URLs to measure them produces report-only violations that real use does not. Separate the listener's findings from the probe's.
 - **Platform lag:** GitHub's Dependabot status and Google's certificate state lag behind the API call that changed them; re-check before concluding something failed. `--dry-run` on `git push` does not test server-side branch protection.
 
+- **HTML edits: check the nesting, not the text.** Moving the FillariStatus card on the main site nested it (and the cards after it) inside the BiblioStatus card, and "same lines, balanced tags, titles in order" all passed, because those checks cannot see a misplaced closing tag. Two causes: the end of the card was found by searching for the first `</div>` indented 16 spaces, which also matches *inside* the 20-space line of the inner links div; and the check was blind to structure. Find block boundaries by counting `<div>`/`</div>` depth, and verify with a parser that every card is a *direct child of the grid* (and then look at the rendered page). The fix was one `</div>` (`0ace6b2`).
+- **`isTRUE(x)` can silently turn a feature into a no-op.** BiblioStatus' map dark mode died when `if (input$dark_mode)` (which errored on bslib's string value) was wrapped in `isTRUE()`; the author later called the input "unreliable" and fixed only the chart. When silencing an error, check what the value actually is.
+- **BiblioStatus' startup can stall on "Loading data, please wait"** when its `shiny:sessioninitialized` handler doesn't run (seen locally with geolocation in the "prompt" state, and once on the live site right after a deploy; three reloads in a row then started fine). Not caused by the tile change; worth watching.
+- **Don't grep secret files.** A search that matched `~/VSCode/BiblioStatus/app/secret.R` printed the old Carto key into the session output; exclude secret files from searches.
+- **Pull before editing a repo that a bot commits to:** the local BiblioStatus checkout was 18 data-refresh commits behind.
+- **BiblioStatus deploys take ~35 minutes** (its image compiles the R packages from source) and its workflow only runs after the nightly data job or on demand (`gh workflow run deploy_shiny_app.yml`); it has no concurrency guard, so don't start two at once.
+
 ## 13. Next steps (in order)
 The app, the project page, automatic deploys and the security work are done and live. What remains:
 1. ~~Custom domain~~ done (live, see §8). The README and the project page already point at it.
 2. ~~Main-site card~~ done (live on youcanbeapirate.com).
-3. ~~Restrict the Carto key~~ not needed any more: FillariStatus no longer uses it (see §6). BiblioStatus still does.
+3. ~~Restrict the Carto key~~ not needed any more: neither app uses it (see §0 for the optional clean-up of the unused secrets).
 4. Optional hardening: Workload Identity Federation with a dedicated least-privilege service account (then delete the new key `59985cf8…`, never the old BiblioStatus one); tighten the report-only CSP into an enforced one; a Cloud Billing budget alert; image/package vulnerability scanning; a test job in the workflow that gates deploys.
 5. v2 candidates from §9: tile retry/fallback, history/patterns, walking time, PWA, Finnish UI; optionally `--min-instances 1`.
 6. Still unverified: phones and non-Chrome browsers, the pinned-light default on a machine set to dark mode, a real season change, and whether the intermittent empty map box (reported once, in a non-Chrome desktop browser) still occurs now that a placeholder is shown.
