@@ -164,6 +164,9 @@ function(input, output, session) {
                     fillOpacity = 0.9,
                     weight = 2,
                     popup = popups,
+                    popupOptions = popupOptions(
+                        autoPanPaddingTopLeft = map_popup_pan_padding
+                    ),
                     # The bike count on the marker doubles as a non-colour cue
                     label = as.character(st$bikes),
                     labelOptions = labelOptions(

@@ -30,6 +30,9 @@ map_default_zoom <- 13
 map_marker_radius <- 14
 map_user_marker_radius <- 8
 map_max_fit_zoom <- 16
+# Opening a popup pans the map so it stays at least this many px (x, y) from
+# the top-left edge, clear of the zoom buttons that sit there
+map_popup_pan_padding <- c(60, 10)
 carto_attribution <- paste0(
     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ',
     '&copy; <a href="https://carto.com/attributions">CARTO</a>'
