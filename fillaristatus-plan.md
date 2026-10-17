@@ -169,7 +169,7 @@ FillariStatus/
 - Colour: palette in `variables.R` (Okabe-Ito-based light, brighter dark variants), injected into the page as CSS custom properties by `ui.R`, so there is one source of truth.
 
 ### UI/server
-- Tabs List/Map under shared Search + Stations (1–20) + Refresh + "My location".
+- Tabs List/Map under shared Search + Stations (1–20) + Refresh. There is no "My location" control: the position is read once per page load (reload to refresh it).
 - Search is `debounce()`d 300 ms. `searching()` drives the map-fit rule and the empty-list message.
 - Map: base map in `renderLeaflet`; markers via `leafletProxy` once `input$map_bounds` shows the map exists (see §12). The view re-fits only when the station set or the location changes; popups pan to stay ≥60 px from the left edge (clear of the zoom buttons).
 - Marker label (bike count) is black text (≥5.4:1 on every status fill). The user marker is an SVG ring-and-dot icon so it doesn't rely on colour.
@@ -218,6 +218,7 @@ FillariStatus/
 - **Cost:** within the free tier expected; no budget alert was set up. `--min-instances 1` would remove cold starts at a small recurring cost (not applied; the user decides).
 
 ## 9. Later ideas (v2+)
+- **Live location:** re-read the position on every 60 s refresh and when the tab becomes visible again, so distances follow a walking user (considered when the "My location" link was removed; one location read a minute while the page is open and permission is granted).
 - **Tile robustness:** Esri has no SLA. Consider retrying failed tiles and falling back to another provider (e.g. OpenStreetMap) on tile errors. (With Carto, one live load got 8 of 9 starting-zoom tiles refused with HTTP 503, all fine moments later.) Also avoid the throwaway zoom-13 starting view (request tiles only for the fitted view).
 - Revisit the tile provider if Esri's terms or availability change (alternatives in DEPLOY.md > Map tiles). Apply the same keyless switch to BiblioStatus, which still uses the unrestrictable Carto key.
 - **History & patterns:** snapshot station status every 10–15 min into Turso, show "typically empty by 08:15 on weekdays". GitHub Actions cron is too unreliable at that granularity; use Cloud Scheduler → a tiny Cloud Run job.
@@ -262,6 +263,7 @@ FillariStatus/
 | Theme | youcanbeapirate brand red, Gotham (as the BiblioStatus app), **light by default**, lighter red links in dark mode, status colours unchanged |
 | Security headers | Wrap the page handler (enforced framing/referrer/permissions/HSTS + report-only CSP) |
 | GitHub hygiene | Secret scanning, push protection, Dependabot, protected `main`, SHA-pinned actions |
+| "My location" link | Removed (it did nothing visible when the position hadn't changed, jumped the page to the top, and re-asking after a denial doesn't work in most browsers). The position is read once per page load; the denied-location notice now says to allow location and reload. |
 | Project page | Yes: `docs/` on GitHub Pages, plus a card on the main site (both done) |
 | Deploy credential | A second key for the existing `github-deploy` account (same pattern as BiblioStatus); keyless WIF noted as the hardening option |
 
@@ -303,6 +305,8 @@ FillariStatus/
 - **Don't grep secret files.** A search that matched `~/VSCode/BiblioStatus/app/secret.R` printed the old Carto key into the session output; exclude secret files from searches.
 - **Pull before editing a repo that a bot commits to:** the local BiblioStatus checkout was 18 data-refresh commits behind.
 - **BiblioStatus deploys take ~35 minutes** (its image compiles the R packages from source) and its workflow only runs after the nightly data job or on demand (`gh workflow run deploy_shiny_app.yml`); it has no concurrency guard, so don't start two at once.
+
+- **`<a href="#">` used as a button jumps the page to the top** (and leaves a stray `#` in the URL) unless the handler calls `preventDefault`. The old "My location" link did exactly that, which is one reason it was removed. Use a real button or `actionLink` for actions.
 
 ## 13. Next steps (in order)
 The app, the project page, automatic deploys and the security work are done and live. What remains:
