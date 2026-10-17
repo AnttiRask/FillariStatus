@@ -12,10 +12,27 @@ status_thresholds <- list(
     low_max   = 2L
 )
 
-# Okabe-Ito based, colour-blind friendly
+# Okabe-Ito based, colour-blind friendly. `unknown` is for missing data and
+# `me` marks the user's own location.
 status_colours <- list(
-    light = list(empty = "#D55E00", low = "#E69F00", plenty = "#009E73"),
-    dark  = list(empty = "#FF4444", low = "#FFD700", plenty = "#00D9A0")
+    light = list(
+        empty = "#D55E00", low = "#E69F00", plenty = "#009E73",
+        unknown = "#999999", me = "#0072B2"
+    ),
+    dark  = list(
+        empty = "#FF4444", low = "#FFD700", plenty = "#00D9A0",
+        unknown = "#BBBBBB", me = "#56B4E9"
+    )
+)
+
+# Map
+map_default_zoom <- 13
+map_marker_radius <- 14
+map_user_marker_radius <- 8
+map_max_fit_zoom <- 16
+carto_attribution <- paste0(
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ',
+    '&copy; <a href="https://carto.com/attributions">CARTO</a>'
 )
 
 # Used until (or unless) the browser shares its location: Rautatientori

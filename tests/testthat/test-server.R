@@ -1,4 +1,5 @@
 library(shiny)
+library(leaflet)
 
 # Server logic against the saved fixture; get_stations() is mocked so no
 # live API call is made
@@ -6,6 +7,13 @@ server_env <- new.env(parent = globalenv())
 for (f in c("variables", "strings", "api", "functions")) {
     sys.source(here::here("app/www", paste0(f, ".R")), envir = server_env)
 }
+# Mirror what global.R provides
+server_env$carto_api_key <- ""
+# The test blocks below are evaluated in this file's environment, so bring in
+# the helpers they call directly instead of relying on other test files
+haversine_m <- server_env$haversine_m
+default_location <- server_env$default_location
+
 fixture_body <- jsonlite::read_json(
     here::here("tests/testthat/fixtures/stations.json"),
     simplifyVector = FALSE
@@ -102,6 +110,20 @@ test_that("a search with no matches gives an empty list", {
     testServer(server_fn, {
         session$setInputs(search = "zzzz-no-such-station")
         session$elapse(500)
+        expect_equal(nrow(nearest()), 0)
+    })
+})
+
+test_that("the map code path runs for tab, dark mode and location changes", {
+    testServer(server_fn, {
+        session$setInputs(tab = "map", dark_mode = "dark")
+        expect_true(is_dark())
+        session$setInputs(user_location = list(lat = 60.17, lon = 24.94))
+        session$setInputs(search = "zzzz-no-such-station")
+        session$elapse(500)
+        session$setInputs(dark_mode = "light", tab = "list")
+        session$flushReact() # run the tile/marker observers before teardown
+        expect_false(is_dark())
         expect_equal(nrow(nearest()), 0)
     })
 })

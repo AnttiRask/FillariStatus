@@ -4,3 +4,5 @@
 .Rproj.user/
 renv/library/
 renv/staging/
+_problems/
+testthat-problems.rds

@@ -68,10 +68,6 @@ function(input, output, session) {
 
         tagList(lapply(seq_len(nrow(st)), function(i) {
             s <- st[i, ]
-            directions_url <- sprintf(
-                "https://www.google.com/maps/dir/?api=1&destination=%s,%s&travelmode=walking",
-                s$lat, s$lon
-            )
             div(
                 class = paste("fs-card", paste0("fs-", s$status)),
                 div(
@@ -86,12 +82,12 @@ function(input, output, session) {
                             `aria-label` = if (s$favourite) strings$fav_remove else strings$fav_add,
                             if (s$favourite) "★" else "☆"
                         ),
-                        paste0(s$name, " (", station_number(s$station_id), ")")
+                        station_title(s$name, s$station_id)
                     ),
                     div(class = "fs-distance", format_distance(s$distance_m)),
                     tags$a(
                         class = "fs-directions",
-                        href = directions_url,
+                        href = directions_url(s$lat, s$lon),
                         target = "_blank",
                         rel = "noopener",
                         strings$directions
@@ -100,5 +96,111 @@ function(input, output, session) {
                 div(class = "fs-count", s$bikes)
             )
         }))
+    })
+
+    # ---- Map ----------------------------------------------------------------
+    is_dark <- reactive(identical(input$dark_mode, "dark"))
+
+    tile_options <- tileOptions(
+        subdomains = "abcd", maxZoom = 19, attribution = carto_attribution
+    )
+
+    # Base map only; stations are drawn through the proxy below, so panning
+    # and zooming survive the 60 s data refresh
+    output$map <- renderLeaflet({
+        leaflet() |>
+            addTiles(
+                urlTemplate = carto_tile_url(isolate(is_dark()), carto_api_key),
+                layerId = "basemap",
+                options = tile_options
+            ) |>
+            setView(default_location$lon, default_location$lat, map_default_zoom)
+    })
+
+    observeEvent(is_dark(), {
+        leafletProxy("map") |>
+            removeTiles("basemap") |>
+            addTiles(
+                urlTemplate = carto_tile_url(is_dark(), carto_api_key),
+                layerId = "basemap",
+                options = tile_options
+            )
+    }, ignoreInit = TRUE)
+
+    # Only re-fit the view when the set of stations or the location changes
+    last_fit <- reactiveVal(NULL)
+    observeEvent(input$tab, last_fit(NULL))
+
+    observe({
+        res <- stations()
+        req(res$data)
+        st <- nearest()
+        dark <- is_dark()
+        loc <- location()
+        me <- has_location()
+        input$tab # redraw (and re-fit) when the map tab is shown
+
+        proxy <- leafletProxy("map") |>
+            clearGroup("stations") |>
+            clearGroup("me")
+
+        if (nrow(st) > 0) {
+            colours <- status_colour(st$status, dark)
+            popups <- vapply(
+                seq_len(nrow(st)),
+                function(i) station_popup(st[i, ], strings),
+                character(1)
+            )
+            proxy |>
+                addCircleMarkers(
+                    data = st,
+                    lng = ~lon, lat = ~lat,
+                    layerId = ~station_id,
+                    group = "stations",
+                    radius = map_marker_radius,
+                    color = colours,
+                    fillColor = colours,
+                    fillOpacity = 0.9,
+                    weight = 2,
+                    popup = popups,
+                    # The bike count on the marker doubles as a non-colour cue
+                    label = as.character(st$bikes),
+                    labelOptions = labelOptions(
+                        noHide = TRUE,
+                        direction = "center",
+                        textOnly = TRUE,
+                        className = "fs-marker-label"
+                    )
+                )
+        }
+
+        if (me) {
+            me_colour <- if (dark) status_colours$dark$me else status_colours$light$me
+            proxy |>
+                addCircleMarkers(
+                    lng = loc$lon, lat = loc$lat,
+                    group = "me",
+                    radius = map_user_marker_radius,
+                    color = me_colour,
+                    fillColor = me_colour,
+                    fillOpacity = 0.8,
+                    weight = 2,
+                    popup = strings$you_are_here
+                )
+        }
+
+        lons <- c(st$lon, if (me) loc$lon)
+        lats <- c(st$lat, if (me) loc$lat)
+        fit_key <- paste(
+            paste(sort(st$station_id), collapse = ","), me, round(loc$lat, 3), round(loc$lon, 3)
+        )
+        if (length(lons) > 0 && !identical(isolate(last_fit()), fit_key)) {
+            last_fit(fit_key)
+            proxy |>
+                fitBounds(
+                    min(lons), min(lats), max(lons), max(lats),
+                    options = list(padding = c(30, 30), maxZoom = map_max_fit_zoom)
+                )
+        }
     })
 }

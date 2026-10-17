@@ -104,3 +104,41 @@ test_that("format_distance uses m below 1 km and km with a decimal comma above",
         c("250 m", "1,64 km")
     )
 })
+
+test_that("station_title and directions_url", {
+    expect_equal(station_title("Kamppi", "smoove:077"), "Kamppi (077)")
+    expect_match(directions_url(60.17, 24.94), "destination=60.17,24.94&travelmode=walking", fixed = TRUE)
+})
+
+test_that("status_colour picks the right palette and handles unknowns", {
+    expect_equal(
+        status_colour(c("empty", "low", "plenty")),
+        c("#D55E00", "#E69F00", "#009E73")
+    )
+    expect_equal(status_colour("empty", dark = TRUE), "#FF4444")
+    expect_equal(status_colour(c(NA, "weird")), rep("#999999", 2))
+    expect_length(status_colour(character()), 0)
+})
+
+test_that("carto_tile_url switches theme and only adds a key when set", {
+    expect_match(carto_tile_url(FALSE), "/light_all/", fixed = TRUE)
+    expect_match(carto_tile_url(TRUE), "/dark_all/", fixed = TRUE)
+    expect_false(grepl("key=", carto_tile_url(TRUE)))
+    expect_match(carto_tile_url(FALSE, key = "abc"), "?key=abc", fixed = TRUE)
+})
+
+test_that("station_popup mirrors the card and escapes names", {
+    st <- tibble::tibble(
+        name = "<script>x</script> & Co", station_id = "smoove:077",
+        distance_m = 1636, bikes = 1L, lat = 60.1, lon = 24.9
+    )
+    strings <- list(bike_one = "bike", bike_many = "bikes", directions = "Directions")
+    html <- station_popup(st, strings)
+    expect_match(html, "(077)", fixed = TRUE)
+    expect_match(html, "1,64 km", fixed = TRUE)
+    expect_match(html, "1 bike\\s*<br")
+    expect_match(html, "Directions", fixed = TRUE)
+    expect_false(grepl("<script>", html, fixed = TRUE))
+    expect_match(html, "&lt;script&gt;", fixed = TRUE)
+    expect_match(station_popup(transform(st, bikes = 5L), strings), "5 bikes", fixed = TRUE)
+})

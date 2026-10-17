@@ -77,3 +77,53 @@ format_distance <- function(metres) {
         paste0(format(round(metres / 1000, 2), nsmall = 2, decimal.mark = ","), " km")
     )
 }
+
+directions_url <- function(lat, lon) {
+    sprintf(
+        "https://www.google.com/maps/dir/?api=1&destination=%s,%s&travelmode=walking",
+        lat, lon
+    )
+}
+
+# "Name (077)"
+station_title <- function(name, station_id) {
+    paste0(name, " (", station_number(station_id), ")")
+}
+
+# Colour for a status ("empty" / "low" / "plenty" / NA) in light or dark mode
+status_colour <- function(status, dark = FALSE) {
+    palette <- if (dark) status_colours$dark else status_colours$light
+    out <- unlist(palette[status])
+    out[is.na(status) | !status %in% c("empty", "low", "plenty")] <- palette$unknown
+    unname(out)
+}
+
+# Basemap tile URL template; the key is only appended when one is configured
+carto_tile_url <- function(dark = FALSE, key = "") {
+    url <- paste0(
+        "https://{s}.basemaps.cartocdn.com/",
+        if (dark) "dark_all" else "light_all",
+        "/{z}/{x}/{y}{r}.png"
+    )
+    if (nzchar(key)) paste0(url, "?key=", key) else url
+}
+
+# Popup content for one station row; mirrors the list card. All text goes
+# through htmltools so station names are escaped.
+station_popup <- function(station, strings) {
+    bikes_label <- if (station$bikes == 1) strings$bike_one else strings$bike_many
+    as.character(htmltools::tags$div(
+        htmltools::tags$strong(station_title(station$name, station$station_id)),
+        htmltools::tags$br(),
+        format_distance(station$distance_m),
+        htmltools::tags$br(),
+        paste(station$bikes, bikes_label),
+        htmltools::tags$br(),
+        htmltools::tags$a(
+            href = directions_url(station$lat, station$lon),
+            target = "_blank",
+            rel = "noopener",
+            strings$directions
+        )
+    ))
+}

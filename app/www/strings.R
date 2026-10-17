@@ -12,6 +12,13 @@ strings <- list(
     location_denied  = "Location isn't available, so distances are measured from Rautatientori. Allow location access and tap \"My location\", or search for a station by name.",
     search_label     = "Search by name or number",
     directions       = "Directions",
+    tab_list         = "List",
+    tab_map          = "Map",
+    you_are_here     = "You are here",
+    bike_one         = "bike",
+    bike_many        = "bikes",
+    attribution      = "Station data \u00A9 HSL / Digitransit, licensed CC BY 4.0",
+    credit           = "Created by",
     fav_add          = "Add to favourites",
     fav_remove       = "Remove from favourites"
 )
