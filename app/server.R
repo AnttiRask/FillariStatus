@@ -203,19 +203,16 @@ function(input, output, session) {
         }
 
         if (me) {
-            me_colour <- if (dark) status_colours$dark$me else status_colours$light$me
             proxy |>
-                addCircleMarkers(
+                addMarkers(
                     lng = loc$lon, lat = loc$lat,
                     group = "me",
-                    radius = map_user_marker_radius,
-                    # White outline keeps the red dot distinct from the
-                    # "empty" station markers
-                    color = "#FFFFFF",
-                    fillColor = me_colour,
-                    fillOpacity = 1,
-                    weight = 2.5,
-                    popup = strings$you_are_here
+                    icon = me_icon(),
+                    popup = strings$you_are_here,
+                    popupOptions = popupOptions(
+                        autoPanPaddingTopLeft = map_popup_pan_padding
+                    ),
+                    options = markerOptions(title = strings$you_are_here)
                 )
         }
 

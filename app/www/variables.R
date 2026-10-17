@@ -12,8 +12,11 @@ status_thresholds <- list(
     low_max   = 2L
 )
 
-# Okabe-Ito based, colour-blind friendly. `unknown` is for missing data and
-# `me` marks the user's own location.
+# Okabe-Ito based, colour-blind friendly. Don't darken `low` to reach 3:1
+# contrast on white: at that point it can't be told apart from `empty` with
+# deuteranopia (dE2000 3.1 at #C28200, vs 12.5 now). The colour bar is
+# redundant with the bike count shown on every card and marker. `unknown` is for missing data and
+# `me` colours the user's own location marker (see me_icon()).
 status_colours <- list(
     light = list(
         empty = "#D55E00", low = "#E69F00", plenty = "#009E73",
@@ -28,7 +31,6 @@ status_colours <- list(
 # Map
 map_default_zoom <- 13
 map_marker_radius <- 14
-map_user_marker_radius <- 8
 map_max_fit_zoom <- 16
 # Opening a popup pans the map so it stays at least this many px (x, y) from
 # the top-left edge, clear of the zoom buttons that sit there

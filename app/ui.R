@@ -68,6 +68,7 @@ page_fluid(
         tags$footer(
             class = "fs-footer",
             p(strings$attribution),
+            p(strings$privacy),
             p(
                 strings$credit, " ",
                 a(href = "https://www.linkedin.com/in/AnttiRask/", "Antti Rask"),

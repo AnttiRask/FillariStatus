@@ -175,3 +175,30 @@ should_refetch <- function(attempted_at, now = Sys.time(), min_age = min_manual_
     is.null(attempted_at) ||
         as.numeric(difftime(now, attempted_at, units = "secs")) >= min_age
 }
+
+# The "you are here" marker: a red ring with a centre dot and a white halo. Its
+# shape (not just its colour) sets it apart from the numbered station discs;
+# the red alone is too close to the "empty" colour for some colour-blind users.
+me_icon_svg <- function(colour = status_colours$light$me) {
+    sprintf(
+        paste0(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">',
+            '<circle cx="14" cy="14" r="13" fill="#FFFFFF" fill-opacity="0.9"/>',
+            '<circle cx="14" cy="14" r="8.5" fill="#FFFFFF" stroke="%1$s" stroke-width="4"/>',
+            '<circle cx="14" cy="14" r="3.5" fill="%1$s"/>',
+            '</svg>'
+        ),
+        colour
+    )
+}
+
+me_icon <- function(colour = status_colours$light$me) {
+    leaflet::makeIcon(
+        iconUrl = paste0(
+            "data:image/svg+xml;utf8,",
+            utils::URLencode(me_icon_svg(colour), reserved = TRUE)
+        ),
+        iconWidth = 28, iconHeight = 28,
+        iconAnchorX = 14, iconAnchorY = 14
+    )
+}

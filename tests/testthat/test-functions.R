@@ -224,3 +224,18 @@ test_that("nearest_stations copes with an empty station list", {
     out <- nearest_stations(empty, 60.17, 24.94, n = 5, favourites = "x")
     expect_equal(nrow(out), 0)
 })
+
+test_that("the location marker is a ring-and-dot icon in the configured colour", {
+    svg <- me_icon_svg("#FF0000")
+    expect_match(svg, 'stroke="#FF0000"', fixed = TRUE)
+    expect_match(svg, 'fill="#FF0000"', fixed = TRUE)
+    # a ring (white fill + stroke), a centre dot and a halo: three circles
+    expect_equal(lengths(regmatches(svg, gregexpr("<circle", svg))), 3)
+
+    icon <- me_icon()
+    expect_match(icon$iconUrl, "^data:image/svg\\+xml;utf8,")
+    # URL-encoded: no raw angle brackets or spaces left in the data URI
+    expect_false(grepl("[<> ]", sub("^data:image/svg\\+xml;utf8,", "", icon$iconUrl)))
+    expect_equal(c(icon$iconWidth, icon$iconHeight), c(28, 28))
+    expect_equal(c(icon$iconAnchorX, icon$iconAnchorY), c(14, 14))
+})

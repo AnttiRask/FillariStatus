@@ -56,7 +56,11 @@
     cursor: pointer;
     color: var(--bs-secondary-color);
 }
-.fs-fav.is-fav { color: var(--fs-low); }
+/* The favourite star is never compared with the status colours, so it can be
+   darker than --fs-low on light backgrounds (3.6:1 vs 2.3:1 on white) */
+:root { --fs-star: #B87A00; }
+[data-bs-theme=dark] { --fs-star: #FFD700; }
+.fs-fav.is-fav { color: var(--fs-star); }
 
 /* Map */
 /* isolation keeps Leaflet's internal z-indexes (controls 1000, popups 700...)
@@ -73,7 +77,7 @@
 .leaflet-popup-content a { color: #0072B2; }
 /* The popup is white in both themes, so the star needs fixed, readable colours */
 .leaflet-popup-content .fs-fav { color: #6c757d; padding-right: 0.3rem; }
-.leaflet-popup-content .fs-fav.is-fav { color: #E69F00; }
+.leaflet-popup-content .fs-fav.is-fav { color: #B87A00; }
 
 .fs-footer {
     margin-top: 2rem;

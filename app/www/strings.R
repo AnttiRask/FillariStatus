@@ -21,6 +21,7 @@ strings <- list(
     bike_one         = "bike",
     bike_many        = "bikes",
     attribution      = "Station data \u00A9 HSL / Digitransit, licensed CC BY 4.0",
+    privacy          = "Your location is used only to find nearby stations and isn't stored. Favourites stay in your browser.",
     credit           = "Created by",
     fav_add          = "Add to favourites",
     fav_remove       = "Remove from favourites"
