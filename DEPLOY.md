@@ -13,13 +13,11 @@ A custom domain can be mapped later (see below).
 | Variable | Where it lives | Used for |
 |---|---|---|
 | `DIGITRANSIT_SUBSCRIPTION_KEY` | Secret Manager `digitransit-subscription-key` | HSL / Digitransit station data. Server-side only, never sent to the browser. |
-| `CARTO_API_KEY` | Secret Manager `carto-api-key` (shared with BiblioStatus) | Map tiles. Without it Carto returns a watermarked "API KEY REQUIRED" tile (with HTTP 200). |
 
-Locally both go in a git-ignored `.Renviron` in the project root:
+Locally it goes in a git-ignored `.Renviron` in the project root:
 
 ```
 DIGITRANSIT_SUBSCRIPTION_KEY=...
-CARTO_API_KEY=...
 ```
 
 Never commit this file. The Docker build excludes it (`.dockerignore` is an
@@ -57,7 +55,7 @@ The script:
 1. checks you are logged in and the project exists
 2. enables the Cloud Build, Cloud Run, Artifact Registry and Secret Manager APIs
 3. creates the `digitransit-subscription-key` secret from your `.Renviron` if it
-   does not exist, and lets the Cloud Run runtime service account read both secrets
+   does not exist, and lets the Cloud Run runtime service account read it
 4. builds the image with Cloud Build and deploys it with
    `--allow-unauthenticated`, `--session-affinity` (Shiny needs a session to
    stay on one instance), `--max-instances 3` and `--concurrency 20`
@@ -93,7 +91,7 @@ The page response carries `X-Frame-Options: DENY` plus an enforced CSP with `fra
 `Content-Security-Policy-Report-Only`. They live in `app/www/security.R` and are applied in `app/run.R`
 by wrapping the app's page handler (Shiny's `shiny.http.response.filter` option does nothing).
 
-The report-only policy allows exactly the hosts the app uses: itself, `*.basemaps.cartocdn.com` (tiles) and
+The report-only policy allows exactly the hosts the app uses: itself, `services.arcgisonline.com` (map tiles) and
 `fonts.cdnfonts.com` (Gotham). Browsers don't enforce it, they only report violations. To see them reliably,
 add a `securitypolicyviolation` event listener in the page (the Chrome console tool does not show report-only
 violations). To tighten: once no violations show up during real use, rename the header to
@@ -140,8 +138,29 @@ from the recreation to a working certificate. After the mapping reports Ready, c
 two while Google's front ends pick the certificate up (some handshakes fail, then it is stable), so require several
 consecutive successful requests before calling it live.
 
-Once the domain serves HTTPS, restrict the Carto tile key to the domain in Carto's dashboard (the key is
-visible in tile URLs on any public site).
+## Map tiles
+
+The basemap is Esri's **World Light Gray** and **World Dark Gray** canvases (each a base layer plus a labels
+"Reference" layer on top, swapped by the dark-mode toggle). They need **no API key and no account**, so there is
+nothing to leak or expire. Details that matter:
+
+- **Attribution is required** and shown on the map ("Tiles (c) Esri, Esri, HERE, Garmin, (c) OpenStreetMap
+  contributors, and the GIS user community"). It must be passed as `addTiles()`'s own `attribution` argument;
+  `addTiles()` overwrites `options$attribution` with it, so one passed through `tileOptions()` is silently dropped
+  (this happened with the earlier Carto layer too). `add_basemap()` in `app/www/functions.R` does it right and a
+  test guards it.
+- **Tiles are real only up to zoom 16.** From 17 on Esri serves a grey "Map data not yet available" tile, so
+  requests are capped at 16 (`map_tile_max_native_zoom`) and the browser scales them up for closer views.
+- Esri's URLs are ordered `{z}/{y}/{x}`.
+- **No guarantees:** these keyless services have no SLA, and I could not verify Esri's current terms of use from
+  here. For a low-traffic personal app the risk is small, but if Esri ever changes the terms, switch the tile
+  source: change `map_tiles_host` / `map_tile_urls()` / `add_basemap()` and the CSP host in
+  `app/www/security.R`. Alternatives: OpenStreetMap's standard tiles (keyless but busy, no dark version and a
+  usage policy that discourages anything but light use), or a provider with a free tier and domain-restricted key
+  (MapTiler, Stadia Maps).
+- **History:** the app used Carto's tiles with an API key until 2026-10-17. The Carto trial ended, the dashboard
+  became unreachable, and the key (visible in the tile URLs of public sites) could neither be restricted to a
+  domain nor rotated. The `carto-api-key` secret still exists in Secret Manager because BiblioStatus uses it.
 
 ## Cost
 

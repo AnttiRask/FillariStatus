@@ -40,8 +40,7 @@ Stop a local server **by port** (`ss -ltnp | grep :8083`), never with `pkill -f 
 ## Environment Variables
 
 - `DIGITRANSIT_SUBSCRIPTION_KEY` - Digitransit API key (server-side only).
-- `CARTO_API_KEY` - map tile key. Without it Carto answers HTTP 200 with a watermark tile ("API KEY REQUIRED"); check tile size (real ≈ 13-23 KB, watermark ≈ 2 KB), not the status code.
-- Locally both live in the git-ignored `.Renviron`. In Cloud Run they come from Secret Manager (`digitransit-subscription-key`, `carto-api-key`). Never commit or print their values.
+- That is the only secret. The map tiles (Esri World Light/Dark Gray) are keyless. Locally it lives in the git-ignored `.Renviron`; in Cloud Run it comes from Secret Manager (`digitransit-subscription-key`). Never commit or print its value. (`CARTO_API_KEY` / `carto-api-key` was used until 2026-10-17 and is still in Secret Manager only because BiblioStatus uses it.)
 
 ## Deployment
 
@@ -61,6 +60,7 @@ Google Cloud Run, project `bibliostatus-app` (shared with BiblioStatus), region 
 - `testServer()` doesn't step `debounce()` timers for a value already read; read search-dependent values for the first time *after* the input change.
 - Docker: system libraries come from Posit Package Manager's sysreqs API; renv's cache must be disabled at build (`RENV_CONFIG_CACHE_ENABLED=FALSE`), otherwise packages are symlinks into root's private cache and the non-root runtime user can't load them. A build piped through `tee`/`tail` reports the pipe's exit code: capture `docker build`'s own and check the image exists. Same for `deploy.sh`.
 - Don't darken the amber "low" colour for contrast: it becomes indistinguishable from "empty" for deuteranopia (see plan §6). The bike count is on every card and marker.
+- **Map tiles (Esri):** attribution must be `addTiles()`'s own `attribution` argument (it overwrites `options$attribution`, so one inside `tileOptions()` is silently dropped; `add_basemap()` does it right and a test guards it). Real tiles stop at zoom 16 (17+ is a grey "Map data not yet available" tile), so requests are capped there. Esri URLs are `{z}/{y}/{x}`. Tile providers can answer HTTP 200 with a placeholder (Carto's missing-key watermark, Esri above zoom 16): check tile content/size, not the status code. No SLA: if the provider changes, see DEPLOY.md > Map tiles.
 - Test in the browser, not only with unit tests: most bugs above were found by driving Chrome.
 - The Chrome console tool does **not** show CSP report-only violations; add a `securitypolicyviolation` listener in the page (and prove it catches a deliberate probe) before concluding "no violations".
 - Geolocation permission can silently differ per loopback origin (127.0.0.1 vs 127.0.0.2). For screenshots that go into the repo, force the fallback position with `Shiny.setInputValue('user_location', {lat: 60.1699, lon: 24.9384, accuracy: 20}, {priority: 'event'})`, check the first station is Mannerheimintie at 42 m, and delete the raw captures afterwards.

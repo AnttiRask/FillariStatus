@@ -63,11 +63,10 @@ fillaristatus-plan.md # project plan and history
 
 ## 💻 Run Locally
 
-You need a free [Digitransit API key](https://portal-api.digitransit.fi/) and a [Carto](https://carto.com/) key for the map tiles. Put them in a git-ignored `.Renviron` in the project root:
+You need a free [Digitransit API key](https://portal-api.digitransit.fi/). Put it in a git-ignored `.Renviron` in the project root (the map tiles need no key):
 
 ```
 DIGITRANSIT_SUBSCRIPTION_KEY=...
-CARTO_API_KEY=...
 ```
 
 Then either:
@@ -99,7 +98,7 @@ The app runs on Google Cloud Run. See [DEPLOY.md](DEPLOY.md) for the secrets, `d
 
 ## 📊 Data
 
-Station data © [HSL](https://www.hsl.fi/) / [Digitransit](https://digitransit.fi/), licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Map tiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors © [CARTO](https://carto.com/attributions).
+Station data © [HSL](https://www.hsl.fi/) / [Digitransit](https://digitransit.fi/), licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Map tiles © Esri — Esri, HERE, Garmin, © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, and the GIS user community.
 
 ## 📄 License
 
