@@ -4,6 +4,7 @@ function(input, output, session) {
 
     # A non-blank search overrides the location-based list; blank restores it
     search <- debounce(reactive(input$search), 300)
+    searching <- reactive(nzchar(str_squish(search() %||% "")))
 
     has_location <- reactive(!is.null(input$user_location))
     location <- reactive({
@@ -188,18 +189,25 @@ function(input, output, session) {
                     lng = loc$lon, lat = loc$lat,
                     group = "me",
                     radius = map_user_marker_radius,
-                    color = me_colour,
+                    # White outline keeps the red dot distinct from the
+                    # "empty" station markers
+                    color = "#FFFFFF",
                     fillColor = me_colour,
-                    fillOpacity = 0.8,
-                    weight = 2,
+                    fillOpacity = 1,
+                    weight = 2.5,
                     popup = strings$you_are_here
                 )
         }
 
-        lons <- c(st$lon, if (me) loc$lon)
-        lats <- c(st$lat, if (me) loc$lat)
+        # While searching, fit the results only: a far-away match shouldn't
+        # force the view to also include where the user is. The dot is still
+        # drawn, and is simply off-screen if it is far from the results.
+        fit_me <- me && !searching()
+        lons <- c(st$lon, if (fit_me) loc$lon)
+        lats <- c(st$lat, if (fit_me) loc$lat)
         fit_key <- paste(
-            paste(sort(st$station_id), collapse = ","), me, round(loc$lat, 3), round(loc$lon, 3)
+            paste(sort(st$station_id), collapse = ","), fit_me,
+            if (fit_me) paste(round(loc$lat, 3), round(loc$lon, 3))
         )
         if (length(lons) > 0 && !identical(isolate(last_fit()), fit_key)) {
             last_fit(fit_key)

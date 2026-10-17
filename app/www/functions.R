@@ -43,10 +43,11 @@ nearest_stations <- function(
         ) |>
         dplyr::arrange(.data$distance_m)
 
-    # Favourites are always shown, pinned first, in addition to the n nearest
+    # The n nearest stations, plus any favourites outside them; favourites are
+    # pinned first. A favourite within the n nearest takes one of the n slots.
     dplyr::bind_rows(
         dplyr::filter(ranked, .data$favourite),
-        dplyr::filter(ranked, !.data$favourite) |> dplyr::slice_head(n = n)
+        dplyr::slice_head(ranked, n = n) |> dplyr::filter(!.data$favourite)
     )
 }
 

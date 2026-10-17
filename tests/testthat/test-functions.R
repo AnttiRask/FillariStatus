@@ -60,13 +60,25 @@ test_that("favourites are shown in addition to the n nearest", {
     expect_equal(out$favourite, c(TRUE, FALSE))
 })
 
-test_that("a favourite is not duplicated when it is also nearest", {
+test_that("a favourite within the n nearest takes one of the n slots", {
     out <- nearest_stations(
-        stations_tbl, 60.1702, 24.9385, n = 2, favourites = "c"
+        stations_tbl, 60.1702, 24.9385, n = 2, favourites = "a"
     )
     expect_equal(anyDuplicated(out$station_id), 0)
-    expect_equal(out$station_id[1], "c")
-    expect_equal(nrow(out), 3)
+    expect_equal(nrow(out), 2)
+    # favourite pinned first, then the rest by distance
+    expect_equal(out$station_id, c("a", "c"))
+    expect_equal(out$favourite, c(TRUE, FALSE))
+})
+
+test_that("only favourites outside the n nearest are added on top", {
+    out <- nearest_stations(
+        stations_tbl, 60.1702, 24.9385, n = 2, favourites = c("a", "b")
+    )
+    # n nearest are c and a; b is a far favourite, so 3 rows in total
+    expect_equal(sort(out$station_id), c("a", "b", "c"))
+    expect_equal(out$station_id[1:2], c("a", "b"))
+    expect_equal(out$station_id[3], "c")
 })
 
 test_that("filter_by_name matches case-insensitively and ignores blanks", {

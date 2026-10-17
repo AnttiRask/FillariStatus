@@ -144,3 +144,26 @@ test_that("the map code path runs for tab, dark mode and location changes", {
         expect_equal(nrow(nearest()), 0)
     })
 })
+
+# testServer doesn't step debounce timers for a value that was already read,
+# so each case reads searching() for the first time after the input changes.
+# (The live debounce behaviour was checked in a browser.)
+test_that("searching is true for a non-blank search", {
+    testServer(server_fn, {
+        session$setInputs(search = "Kamppi")
+        session$elapse(500)
+        expect_true(searching())
+    })
+})
+
+test_that("searching is false for no search and for blank input", {
+    testServer(server_fn, {
+        session$flushReact()
+        expect_false(searching())
+    })
+    testServer(server_fn, {
+        session$setInputs(search = "   ")
+        session$elapse(500)
+        expect_false(searching())
+    })
+})

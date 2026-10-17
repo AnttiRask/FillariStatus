@@ -17,11 +17,11 @@ status_thresholds <- list(
 status_colours <- list(
     light = list(
         empty = "#D55E00", low = "#E69F00", plenty = "#009E73",
-        unknown = "#999999", me = "#0072B2"
+        unknown = "#999999", me = "#FF0000"
     ),
     dark  = list(
         empty = "#FF4444", low = "#FFD700", plenty = "#00D9A0",
-        unknown = "#BBBBBB", me = "#56B4E9"
+        unknown = "#BBBBBB", me = "#FF0000"
     )
 )
 
