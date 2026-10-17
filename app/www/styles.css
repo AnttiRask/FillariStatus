@@ -59,7 +59,9 @@
 .fs-fav.is-fav { color: var(--fs-low); }
 
 /* Map */
-.leaflet-container { border-radius: 0.5rem; min-height: 350px; }
+/* isolation keeps Leaflet's internal z-indexes (controls 1000, popups 700...)
+   inside the map, so page UI such as open dropdowns always stacks above it */
+.leaflet-container { border-radius: 0.5rem; min-height: 350px; isolation: isolate; }
 .fs-marker-label {
     color: #000;
     font-weight: 700;

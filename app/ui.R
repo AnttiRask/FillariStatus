@@ -8,6 +8,12 @@ status_css <- function(palette) {
     )
 }
 
+# Versioned asset URLs, so browsers don't keep serving a stale stylesheet or
+# script after a change or a deploy
+asset <- function(file) {
+    paste0(file, "?v=", as.integer(file.mtime(file.path("www", file))))
+}
+
 page_fluid(
     title = strings$title,
     theme = bs_theme(version = 5, primary = "#0072B2"),
@@ -16,9 +22,9 @@ page_fluid(
             ":root{", status_css(status_colours$light), "}",
             "[data-bs-theme=dark]{", status_css(status_colours$dark), "}"
         ))),
-        tags$link(rel = "stylesheet", href = "styles.css"),
-        tags$script(src = "geolocation.js"),
-        tags$script(src = "favourites.js")
+        tags$link(rel = "stylesheet", href = asset("styles.css")),
+        tags$script(src = asset("geolocation.js")),
+        tags$script(src = asset("favourites.js"))
     ),
     div(
         class = "fs-container",
