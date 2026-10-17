@@ -32,6 +32,8 @@ Stop a local server **by port** (`ss -ltnp | grep :8083`), never with `pkill -f 
 - `app/www/variables.R` - thresholds, status palettes (light/dark), map settings, defaults. `app/www/strings.R` - **all** user-facing text. Add UI text there, not inline.
 - `app/server.R` - reactive logic; the list is a `renderUI`; the map base is `renderLeaflet` and markers are drawn through `leafletProxy`.
 - `app/ui.R` - layout; injects the status colours as CSS custom properties; `asset()` appends the file mtime to CSS/JS URLs (evaluated once at startup: restart after editing assets).
+- `app/www/security.R` - security headers (enforced frame-ancestors CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy, HSTS, report-only CSP); `app/run.R` wraps the app's `httpHandler` with `with_security_headers()` (Shiny's `shiny.http.response.filter` option does nothing).
+- Theme: youcanbeapirate brand colours in `variables.R` (`brand_colours`), a bslib theme with Gotham (loaded from `fonts.cdnfonts.com`), **light by default** (`input_dark_mode(mode = "light")`), one `--fs-accent` CSS custom property per theme (brand red; lighter red `#F26B70` on dark). Brand red is for chrome only, never for status meaning.
 - `app/www/geolocation.js` / `favourites.js` - browser location and `localStorage` favourites, wired to Shiny inputs.
 - Tests: `tests/testthat/` with a saved real response in `fixtures/stations.json`; `test-server.R` uses `testServer()` with a configurable `get_stations()` mock.
 
@@ -43,7 +45,11 @@ Stop a local server **by port** (`ss -ltnp | grep :8083`), never with `pkill -f 
 
 ## Deployment
 
-Google Cloud Run, project `bibliostatus-app` (shared with BiblioStatus), region `europe-north1`, service `fillaristatus-app`. See `DEPLOY.md`. **Ask the user before** creating cloud resources, deploying, touching GitHub secrets, DNS or the repo's visibility. When running `gcloud` read-only commands, close stdin (`</dev/null`) so an "enable this API?" prompt can't be auto-answered.
+Google Cloud Run, project `bibliostatus-app` (shared with BiblioStatus), region `europe-north1`, service `fillaristatus-app`. See `DEPLOY.md`.
+
+- **Pushes to `main` that touch `app/**`, `Dockerfile`, `.dockerignore`, `renv.lock`, `.Rprofile` or `renv/activate.R|settings.json` deploy automatically** (`.github/workflows/deploy_shiny_app.yml`, secrets `GCP_SA_KEY` + `GCP_PROJECT_ID`, ends with a smoke test). Docs/tests/plan pushes don't deploy. Always read a run's status from GitHub (`gh run view <id> --json status,conclusion,jobs`), not from a background task's exit code. Keep the workflow's flags in sync with `deploy.sh`.
+- Custom domain `fillaristatus.youcanbeapirate.com` is mapped; DNS is at NS1 (CNAME to `ghs.googlehosted.com.`). If the certificate stays pending, delete and recreate the mapping (see DEPLOY.md).
+- The project page is `docs/` published by GitHub Pages at youcanbeapirate.com/FillariStatus/. **Ask the user before** creating cloud resources, deploying, touching GitHub secrets, DNS or the repo's visibility. When running `gcloud` read-only commands, close stdin (`</dev/null`) so an "enable this API?" prompt can't be auto-answered.
 
 ## Gotchas (each cost real time)
 
@@ -56,6 +62,10 @@ Google Cloud Run, project `bibliostatus-app` (shared with BiblioStatus), region 
 - Docker: system libraries come from Posit Package Manager's sysreqs API; renv's cache must be disabled at build (`RENV_CONFIG_CACHE_ENABLED=FALSE`), otherwise packages are symlinks into root's private cache and the non-root runtime user can't load them. A build piped through `tee`/`tail` reports the pipe's exit code: capture `docker build`'s own and check the image exists. Same for `deploy.sh`.
 - Don't darken the amber "low" colour for contrast: it becomes indistinguishable from "empty" for deuteranopia (see plan §6). The bike count is on every card and marker.
 - Test in the browser, not only with unit tests: most bugs above were found by driving Chrome.
+- The Chrome console tool does **not** show CSP report-only violations; add a `securitypolicyviolation` listener in the page (and prove it catches a deliberate probe) before concluding "no violations".
+- Geolocation permission can silently differ per loopback origin (127.0.0.1 vs 127.0.0.2). For screenshots that go into the repo, force the fallback position with `Shiny.setInputValue('user_location', {lat: 60.1699, lon: 24.9384, accuracy: 20}, {priority: 'event'})`, check the first station is Mannerheimintie at 42 m, and delete the raw captures afterwards.
+- zsh does not word-split unquoted variables (`set -- $pair` and `for x in $var` behave differently from bash); use arrays or explicit arguments in shell snippets.
+- `docker image ls` shows the unpacked size (~3 GB); the registry shows the compressed size (~890 MB) that Cloud Run pulls.
 
 ## Conventions
 

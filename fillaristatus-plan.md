@@ -2,11 +2,11 @@
 
 > A free, fast "nearest city bike stations" app for Helsinki & Espoo, built as a sibling of [BiblioStatus](https://github.com/AnttiRask/BiblioStatus).
 >
-> **Live:** https://fillaristatus-app-884476669514.europe-north1.run.app · **Repo:** https://github.com/AnttiRask/FillariStatus (private)
+> **Live:** https://fillaristatus-app-884476669514.europe-north1.run.app · **Repo:** https://github.com/AnttiRask/FillariStatus (public, MIT) · **Project page:** https://youcanbeapirate.com/FillariStatus/
 >
 > **For Claude Code:** read this whole file first. §0 says where the project stands, §12 lists the gotchas that cost time. BiblioStatus (`~/VSCode/BiblioStatus`) is the pattern to reuse. Ask before deploying anything or creating cloud resources, and before touching GitHub secrets, DNS or the repo's visibility.
 
-*Last updated: 2026-10-17, after Milestone 8 (all eight milestones done; revision 2 is live).*
+*Last updated: 2026-10-17, after the post-launch work (theme, security headers, GitHub hygiene, project page, automatic deploys). Revision 5 is live; the custom-domain certificate is still pending.*
 
 ---
 
@@ -21,11 +21,12 @@
 | 5 | Map tab, dark mode, styling | Done | `eafcaf0`, `5d2de01`, `b84ce76`, `6c3fab7`, `75f1ce5`, `146ea39` |
 | 6 | Off-season and error states | Done | `72d9c41` |
 | 7 | Docker + Cloud Run deploy | **Done, live** | `d0358e7`, `ca8c2d9`, `40051f3` |
-| 8 | README, CLAUDE.md, screenshot, favicon, MIT licence, redeploy | **Done, live (revision 2)** | `576c627`, `ee53e68` |
+| 8 | README, CLAUDE.md, screenshot, favicon, MIT licence, redeploy | **Done, live** | `576c627`, `ee53e68` |
+| 9 | Post-launch: GitHub Actions auto-deploy, youcanbeapirate theme, security headers, GitHub hygiene, project page | **Done, live** (custom domain certificate pending) | `b3adaac`, `2d71b9f`, `634b5cf`, `99f3442`, `0792569`, `092838d` |
 
-**Deployed:** revision `fillaristatus-app-00002-6sm` (the first deploy plus the "Loading map…" placeholder, favicon and docs) serves 100 % of traffic.
+**Deployed:** revision `fillaristatus-app-00005-qp5` serves 100 % of traffic. Deploys are automatic now: a push to `main` that touches `app/**` or the build files runs the GitHub Actions workflow (build, deploy, smoke test).
 
-**Not done yet (needs the user's say-so):** GitHub Actions auto-deploy, custom domain `fillaristatus.youcanbeapirate.com`, making the repo public (then add the repo link to the footer). The repo has an MIT licence (`LICENSE`, 2026, same text as BiblioStatus) that takes effect for others once it is public.
+**Pending:** the custom domain `fillaristatus.youcanbeapirate.com` is mapped and DNS (NS1) is correct, but Google's certificate is still pending (see §8); the card for FillariStatus on the main site (`AnttiRask.github.io`) was approved and waits until the domain serves HTTPS. Then the user restricts the Carto key to the domain(s) in Carto's dashboard.
 
 **Never verified (be honest about these):** phone browsers and Safari/Firefox (only desktop Chrome was driven; the user once reported an intermittent empty map box in "another desktop browser"), behaviour at a real season change (stations are live now), Cloud Run cold-start duration, and Carto's 503 behaviour under bursts.
 
@@ -158,6 +159,16 @@ FillariStatus/
 - Map: base map in `renderLeaflet`; markers via `leafletProxy` once `input$map_bounds` shows the map exists (see §12). The view re-fits only when the station set or the location changes; popups pan to stay ≥60 px from the left edge (clear of the zoom buttons).
 - Marker label (bike count) is black text (≥5.4:1 on every status fill). The user marker is an SVG ring-and-dot icon so it doesn't rely on colour.
 
+### Theme (youcanbeapirate brand)
+- Brand colours live in `variables.R` (`brand_colours`: red `#C1272D`, lighter red `#F26B70` for dark mode, grey, dark background `#191414`), the font is Gotham from `fonts.cdnfonts.com` (as in the BiblioStatus app; a system-font stack is the fallback). The app is **light by default** (`input_dark_mode(mode = "light")`); it used to follow the OS setting.
+- Brand red is 5.8:1 on white (fine for text) but only 3.1:1 on `#191414`, so dark mode links use `#F26B70` (6.2:1). `ui.R` exposes one `--fs-accent` custom property per theme for the title's first part ("Fillari", red, like the project pages' `<span>Biblio</span>Status`) and the active tab underline. Brand red is for chrome only; status colours are unchanged (the "empty" status is its own red-orange).
+- Footer links to BiblioStatus, Gallery of the Day, TrackTeller, TuneTeller and the source repo; the favicon is a white bicycle on brand red.
+
+### Security headers
+- `app/www/security.R` defines the headers and `with_security_headers()`; `app/run.R` wraps the app's `httpHandler` with it (Shiny's `shiny.http.response.filter` option was tested and does nothing; wrapping `httpHandler` was tested and works, and handles NULL / plain / promised responses). Static assets don't get the headers (they don't need them).
+- Enforced: `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'`, `Referrer-Policy`, `Permissions-Policy` (geolocation for self only), HSTS (1 year, no subdomains, no preload), `nosniff`. Report-only: a full CSP allowing exactly the app, `*.basemaps.cartocdn.com` and `fonts.cdnfonts.com` (with `'unsafe-inline'`/`'unsafe-eval'` for Shiny and htmlwidgets). Verified in Chrome: no violations during real use; every host the page loaded from is on the list.
+- Not exercised: the effect of enforcing the full CSP. See DEPLOY.md for how to tighten it.
+
 ### Accessibility findings (measured, not assumed)
 - Status colours were simulated for protan/deutan/tritan (Machado 2009, ΔE2000): the three statuses stay distinguishable (worst: light "empty" vs "low" under deuteranopia, ΔE 12.5). The bike count is on every card and marker, so colour is never the only cue.
 - **Don't darken the amber "low" colour** to reach 3:1 contrast on white: it becomes indistinguishable from "empty" for deuteranopia (ΔE 3.1 at `#C28200`, 0.5 at `#B87A00`). The bar is decorative next to the number. Only the favourite star got a darker amber (`#B87A00`, 3.6:1), since it is never compared with the status colours.
@@ -177,7 +188,10 @@ FillariStatus/
 - **Where:** Google Cloud Run, project `bibliostatus-app` (shared with BiblioStatus, as decided), region `europe-north1`, service `fillaristatus-app`, public (`--allow-unauthenticated`), 1 GiB, `--max-instances 3`, `--concurrency 20`, `--session-affinity`, timeout 3600 s. Revision `fillaristatus-app-00001-kcc` served 100 % of traffic after the first deploy.
 - **Secrets:** Secret Manager `digitransit-subscription-key` (created by `deploy.sh` from `.Renviron`) and the existing `carto-api-key`, both exposed as env vars through `--set-secrets`; the runtime service account `884476669514-compute@developer.gserviceaccount.com` has `secretAccessor`. A `github-deploy` service account already exists in the project (BiblioStatus uses it for Actions).
 - **Image:** `rocker/r-ver:4.6.1` (Ubuntu 24.04), system libraries from Posit Package Manager's sysreqs API, `renv::restore()` from P3M Linux binaries, renv cache **disabled** at build, non-root user `fillari`, ~889 MB. Built by Cloud Build (`gcloud builds submit`), ~7 min.
-- **Deploy:** `./deploy.sh` (asks for confirmation; `DRY_RUN=1` prints the plan). Locally: `docker compose up --build` → http://localhost:8083.
+- **Deploy:** automatically through GitHub Actions on pushes to `main` that touch `app/**` or the build files (`.github/workflows/deploy_shiny_app.yml`, secrets `GCP_SA_KEY` + `GCP_PROJECT_ID`, pinned actions, serialised runs, smoke test; the first push-triggered run and a manual run both succeeded), or by hand with `./deploy.sh` (asks for confirmation; `DRY_RUN=1` prints the plan). Locally: `docker compose up --build` → http://localhost:8083. The workflow's service account `github-deploy` is shared with BiblioStatus and has broad roles; the workflow uses a second key for it (id starts `59985cf8`); the old key must not be deleted. Workload Identity Federation (keyless) would be the more secure setup.
+- **Custom domain:** `fillaristatus.youcanbeapirate.com` is mapped to the service (`gcloud beta run domain-mappings`), DNS at NS1 has `CNAME fillaristatus -> ghs.googlehosted.com.`. The first certificate attempt ran before the record was visible and Google backed off; the mapping was deleted and recreated with DNS in place (09:21 UTC) to restart issuance. State at 09:28 UTC: certificate pending. Until it works, the `run.app` URL is the address.
+- **Project page:** `docs/` published by GitHub Pages (main, /docs) at https://youcanbeapirate.com/FillariStatus/; verified live (HTTP 200, valid certificate, identical to the repo file).
+- **Repo settings (via the API):** secret scanning + push protection, Dependabot alerts + security updates, `main` protected against force-push and deletion (configuration verified; enforcement not exercised because testing it would rewrite `main`), Actions token read-only by default, actions pinned to SHAs, `dependabot.yml` for Actions and Docker.
 - Observed: cold start 3.3 s, warm response ~0.24 s; Cloud Run logs clean. The only non-2xx used to be `GET /favicon.ico` 404 (44 of them, all before 08:16 UTC); revision 2 serves the favicon and has had no 404s. Revision 2 was verified in Chrome over HTTPS (icons 200, placeholder CSS live, 5 markers with real tiles, favourites, no Shiny errors).
 - **Cost:** within the free tier expected; no budget alert was set up. `--min-instances 1` would remove cold starts at a small recurring cost (not applied; the user decides).
 
@@ -221,6 +235,11 @@ FillariStatus/
 | Static hosting on GitHub Pages | Rejected (§8) |
 | Redeploy timing | Batched with Milestone 8 (done: revision 2) |
 | Licence | MIT, copyright 2026 Antti Rask (same as BiblioStatus apart from the year) |
+| Theme | youcanbeapirate brand red, Gotham (as the BiblioStatus app), **light by default**, lighter red links in dark mode, status colours unchanged |
+| Security headers | Wrap the page handler (enforced framing/referrer/permissions/HSTS + report-only CSP) |
+| GitHub hygiene | Secret scanning, push protection, Dependabot, protected `main`, SHA-pinned actions |
+| Project page | Yes: `docs/` on GitHub Pages; plus a card on the main site once the domain works |
+| Deploy credential | A second key for the existing `github-deploy` account (same pattern as BiblioStatus); keyless WIF noted as the hardening option |
 
 ## 12. Conventions and lessons learned
 
@@ -243,11 +262,19 @@ FillariStatus/
 - **gcloud prompts:** run read-only gcloud commands with stdin closed (`</dev/null`) so a "enable this API?" prompt can't be auto-confirmed.
 - Chrome-extension quirks: refs go stale; a scroll wheel over the map zooms the map; bslib's dark-mode toggle needs a *real* click; don't call `location.reload()` inside a script.
 - Carto key is exposed in tile URLs by design (as in BiblioStatus); restrict it by domain in Carto's dashboard once there is a stable domain.
+- **Shiny has no response-header hook** (`shiny.http.response.filter` does nothing): wrap `app$httpHandler` (`app/www/security.R`, `app/run.R`).
+- **The Chrome console tool does not capture CSP report-only violations.** Use a `securitypolicyviolation` listener in the page and prove it catches a deliberate probe first; also list the hosts from `performance.getEntriesByType('resource')`.
+- **Geolocation permission can silently differ per loopback origin** (127.0.0.1 vs 127.0.0.2). Screenshots for the repo must force the fallback position with `Shiny.setInputValue('user_location', ...)`, be checked (first station Mannerheimintie, 42 m), and the raw captures deleted. One capture showed the user's real neighbourhood and was discarded.
+- **zsh does not word-split unquoted variables**; shell snippets that loop over `"repo tag"` strings broke. Use explicit arguments or arrays.
+- **`docker image ls` shows the unpacked size (~3 GB)**; the registry's compressed size (~890 MB) is what Cloud Run pulls. A background task's "exit code 0" can be the exit code of a pipe; read the real result (`gh run view`, the log's last line, the registry).
+- **Custom-domain certificates:** if issuance stays pending after DNS is right, delete and recreate the mapping with the record in place to reset Google's retry back-off.
+- **Platform lag:** GitHub's Dependabot status and Google's certificate state lag behind the API call that changed them; re-check before concluding something failed. `--dry-run` on `git push` does not test server-side branch protection.
 
 ## 13. Next steps (in order)
-All eight milestones are done and the app is live. What remains is optional and needs the user's say-so:
-1. **GitHub Actions auto-deploy** on push to `main`: needs the existing `github-deploy` service account's key stored as a secret in this repo (ask first; BiblioStatus' workflow `deploy_shiny_app.yml` is the pattern). Until then, deploy with `./deploy.sh`.
-2. **Custom domain** `fillaristatus.youcanbeapirate.com` (`gcloud beta run domain-mappings create ...`, then a DNS CNAME to `ghs.googlehosted.com`; see DEPLOY.md). Then restrict the Carto key to that domain.
-3. **Make the repo public** (README, screenshot, licence and a clean history are ready; no secrets in the history), then add the repo link to the footer.
-4. v2 candidates from §9: tile retry for Carto 503s, history/patterns, walking time, PWA, Finnish UI; optionally `--min-instances 1` and a billing budget alert.
-5. Still unverified: phones and non-Chrome browsers, a real season change, and whether the intermittent empty map box (reported once, in a non-Chrome desktop browser) still occurs now that a placeholder is shown.
+The app, the project page, automatic deploys and the security work are done and live. What remains:
+1. **Custom domain:** wait for the certificate (or investigate if it is still pending after ~90 minutes from 08:45 UTC, see §8), verify `https://fillaristatus.youcanbeapirate.com` (valid certificate, headers, app), then switch the README's live link to it.
+2. **Main-site card:** add a FillariStatus card (View App / View Project / View Source) to `AnttiRask.github.io/index.html` (approved by the user; waits for the domain so "View App" works).
+3. **User:** restrict the Carto key to `fillaristatus.youcanbeapirate.com` (and the run.app address if wanted) in Carto's dashboard.
+4. Optional hardening: Workload Identity Federation with a dedicated least-privilege service account (then delete the new key `59985cf8…`, never the old BiblioStatus one); tighten the report-only CSP into an enforced one; a Cloud Billing budget alert; image/package vulnerability scanning; a test job in the workflow that gates deploys.
+5. v2 candidates from §9: tile retry for Carto 503s, history/patterns, walking time, PWA, Finnish UI; optionally `--min-instances 1`.
+6. Still unverified: phones and non-Chrome browsers, the pinned-light default on a machine set to dark mode, a real season change, and whether the intermittent empty map box (reported once, in a non-Chrome desktop browser) still occurs now that a placeholder is shown.

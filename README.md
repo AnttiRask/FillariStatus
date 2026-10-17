@@ -10,7 +10,7 @@
 - 🔍 **Search** by station name or number; it overrides the location-based list and clearing it brings the list back
 - ⭐ **Favourites**, pinned to the top; stored in your own browser, no account needed
 - 🧭 **Get directions** - one tap to Google Maps (walking)
-- 🌗 **Dark mode**, mobile-first layout
+- 🌗 **Light by default** with a dark mode toggle, mobile-first layout, youcanbeapirate colours
 - 🔄 **Auto-refresh** every minute, with an "Updated 6 min ago" stamp
 - 🧯 **Graceful states**: a friendly message when the bike season is over, old data kept on screen (with a warning) when a refresh fails, and a search fallback when location is denied
 
@@ -21,6 +21,8 @@
 ## 🚀 Live App
 
 👉 [Try it here!](https://fillaristatus-app-884476669514.europe-north1.run.app)
+
+📄 [Project page](https://youcanbeapirate.com/FillariStatus/)
 
 ## 🛠️ How it works
 
@@ -47,11 +49,14 @@ app/
 ├── server.R          # reactive logic, list rendering, map via leafletProxy
 └── www/
     ├── api.R         # Digitransit query, parsing, cached get_stations() with stale fallback
+    ├── security.R    # security headers, wrapped around the page handler in run.R
     ├── functions.R   # distances, status colours, nearest/search logic, formatting, popup + icon helpers
     ├── variables.R   # thresholds, colour palettes, map settings
     ├── strings.R     # all user-facing text (one place, ready for translation)
     ├── geolocation.js, favourites.js, styles.css, favicon.*
 tests/testthat/       # unit and server tests against a saved real API response
+docs/                 # the project page (GitHub Pages: main branch, /docs folder)
+.github/              # deploy workflow (Cloud Run) and Dependabot config
 Dockerfile, docker-compose.yml, deploy.sh, DEPLOY.md
 fillaristatus-plan.md # project plan and history
 ```
