@@ -1,0 +1,115 @@
+name: Deploy to Cloud Run
+
+# Deploys on pushes to main that change the app or how it is built (not docs,
+# tests or the plan), and on demand: Actions tab > "Deploy to Cloud Run" > Run
+# workflow. Keep the service flags in sync with deploy.sh.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "renv.lock"
+      - ".Rprofile"
+      - "renv/activate.R"
+      - "renv/settings.json"
+  workflow_dispatch:
+
+# Never run two deploys at once; a newer push waits for the running one
+concurrency:
+  group: deploy-cloud-run
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  REGION: europe-north1
+  SERVICE: fillaristatus-app
+  AR_REPO: cloud-run-source-deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build container image
+        run: |
+          IMAGE="$REGION-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/$AR_REPO/$SERVICE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+          BUILD_ID=$(gcloud builds submit \
+            --tag "$IMAGE" \
+            --region "$REGION" \
+            --timeout 3600 \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --async \
+            --format='value(id)')
+
+          echo "Build ID: $BUILD_ID"
+
+          while true; do
+            STATUS=$(gcloud builds describe "$BUILD_ID" \
+              --region "$REGION" \
+              --project ${{ secrets.GCP_PROJECT_ID }} \
+              --format='value(status)')
+            echo "Build status: $STATUS"
+            if [ "$STATUS" = "SUCCESS" ]; then
+              break
+            elif [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "TIMEOUT" ] || [ "$STATUS" = "CANCELLED" ] || [ "$STATUS" = "INTERNAL_ERROR" ]; then
+              echo "Build failed with status: $STATUS"
+              echo "--- Cloud Build logs (tail) ---"
+              gcloud builds log "$BUILD_ID" \
+                --region "$REGION" \
+                --project ${{ secrets.GCP_PROJECT_ID }} | tail -100
+              exit 1
+            fi
+            sleep 30
+          done
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" \
+            --platform managed \
+            --region "$REGION" \
+            --allow-unauthenticated \
+            --memory 1Gi \
+            --timeout 3600 \
+            --session-affinity \
+            --max-instances 3 \
+            --concurrency 20 \
+            --set-secrets "DIGITRANSIT_SUBSCRIPTION_KEY=digitransit-subscription-key:latest,CARTO_API_KEY=carto-api-key:latest" \
+            --project ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Smoke test the deployed service
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" \
+            --region "$REGION" \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --format='value(status.url)')
+          echo "Service URL: $URL"
+          for attempt in 1 2 3 4 5; do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$URL/" || true)
+            echo "Attempt $attempt: HTTP $CODE"
+            if [ "$CODE" = "200" ]; then
+              echo "OK"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Service did not return HTTP 200"
+          exit 1
