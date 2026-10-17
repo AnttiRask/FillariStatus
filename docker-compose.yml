@@ -1,0 +1,16 @@
+# Local run of the production image:  docker compose up --build
+# then open http://localhost:8083
+services:
+  fillaristatus:
+    build: .
+    ports:
+      - "8083:8080"
+    # Keys come from the git-ignored .Renviron; they are not copied into the image
+    env_file:
+      - .Renviron
+    environment:
+      - PORT=8080
+    volumes:
+      # Live code changes without rebuilding (restart the container to reload)
+      - ./app:/app/app
+    restart: unless-stopped
