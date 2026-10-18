@@ -74,8 +74,7 @@ if ! gcloud secrets describe "$DIGITRANSIT_SECRET" --project "$PROJECT_ID" &>/de
 fi
 
 # The Cloud Run runtime service account must be able to read the secret
-PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')"
-RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+RUNTIME_SA="fillaristatus-runtime@${PROJECT_ID}.iam.gserviceaccount.com"
 run gcloud secrets add-iam-policy-binding "$DIGITRANSIT_SECRET" \
   --member "serviceAccount:${RUNTIME_SA}" \
   --role roles/secretmanager.secretAccessor \
@@ -101,6 +100,7 @@ run gcloud run deploy "$SERVICE_NAME" \
   --memory 1Gi \
   --timeout 3600 \
   --session-affinity \
+  --service-account "fillaristatus-runtime@${PROJECT_ID}.iam.gserviceaccount.com" \
   --max-instances "$MAX_INSTANCES" \
   --concurrency "$CONCURRENCY" \
   --set-secrets "DIGITRANSIT_SUBSCRIPTION_KEY=${DIGITRANSIT_SECRET}:latest" \

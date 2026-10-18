@@ -92,6 +92,7 @@ jobs:
             --memory 1Gi \
             --timeout 3600 \
             --session-affinity \
+            --service-account fillaristatus-runtime@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
             --max-instances 3 \
             --concurrency 20 \
             --set-secrets "DIGITRANSIT_SUBSCRIPTION_KEY=digitransit-subscription-key:latest" \
