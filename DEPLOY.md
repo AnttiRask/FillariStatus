@@ -74,8 +74,14 @@ through environment variables if traffic needs it.
 - **Same flags as `deploy.sh`.** If you change one, change the other.
 - **Smoke test:** the last step requests the service URL and fails the run unless it returns HTTP 200.
   A failed deploy leaves the previous revision serving.
-- **Secrets** (repo Settings > Secrets and variables > Actions): `GCP_SA_KEY` (a JSON key of the
-  `github-deploy` service account) and `GCP_PROJECT_ID` (`bibliostatus-app`).
+- **Keyless login:** the workflow authenticates with Workload Identity Federation (pool `github`,
+  provider `github-oidc`, limited to the FillariStatus and BiblioStatus repos) and acts as the
+  `github-deploy` service account. There is no stored key (`id-token: write` is the permission it needs).
+  A just-created IAM binding can take a few minutes to work; a first run may fail with
+  `iam.serviceAccounts.getAccessToken denied`, and a rerun passes.
+- **Secrets** (repo Settings > Secrets and variables > Actions): `GCP_PROJECT_ID` (`bibliostatus-app`).
+- **Runtime account:** the service runs as `fillaristatus-runtime`, which can read only the
+  `digitransit-subscription-key` secret. The default compute account no longer has `roles/editor`.
 - **Pinned actions:** third-party actions are pinned to commit SHAs (the comment gives the version);
   Dependabot (`.github/dependabot.yml`) proposes weekly updates for them and for the Docker base image.
 
