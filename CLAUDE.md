@@ -66,6 +66,7 @@ Google Cloud Run, project `bibliostatus-app` (shared with BiblioStatus), region 
 - Geolocation permission can silently differ per loopback origin (127.0.0.1 vs 127.0.0.2). For screenshots that go into the repo, force the fallback position with `Shiny.setInputValue('user_location', {lat: 60.1699, lon: 24.9384, accuracy: 20}, {priority: 'event'})`, check the first station is Mannerheimintie at 42 m, and delete the raw captures afterwards.
 - zsh does not word-split unquoted variables (`set -- $pair` and `for x in $var` behave differently from bash); use arrays or explicit arguments in shell snippets.
 - `docker image ls` shows the unpacked size (~3 GB); the registry shows the compressed size (~890 MB) that Cloud Run pulls.
+- **`session$allowReconnect(TRUE)` does nothing on Cloud Run.** The Shiny client only reconnects if the host (Shiny Server, Posit Connect) allows it as well, so a dropped websocket (Cloud Run closes it at the `--timeout`, 3600 s at most) greys the page out. `server.R` uses `"force"`, which makes the client reconnect anyway: tested by closing the socket (`Shiny.shinyapp.$socket.close()`), the page is back in about 1.5 s with the search text kept. The server can't resume the old session, so a new one starts and the browser re-sends its inputs; keep the state in inputs, localStorage or the shared cache, and don't put a non-idempotent action (a paid API call, a write) behind an input that would fire again on a fresh session.
 
 ## Conventions
 

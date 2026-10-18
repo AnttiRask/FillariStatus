@@ -1,4 +1,13 @@
 function(input, output, session) {
+    # Reconnect quietly if the websocket drops, e.g. when Cloud Run closes it at
+    # the 3600 s timeout. TRUE would do nothing here: the client only reconnects
+    # if the host (Shiny Server, Posit Connect) allows it too; "force" makes it
+    # reconnect anyway. The server can't resume the old session, so a new one
+    # starts and the browser re-sends its inputs. That is fine for this app,
+    # whose state is its inputs, the favourites in localStorage and the shared
+    # station cache.
+    session$allowReconnect("force")
+
     n <- reactive(as.integer(input$n %||% default_n_nearest))
     favourites <- reactive(as.character(unlist(input$favourites)))
 
