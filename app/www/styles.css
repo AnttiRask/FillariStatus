@@ -5,6 +5,22 @@
 
 .fs-header { display: flex; justify-content: space-between; align-items: center; }
 .fs-title { font-size: 1.5rem; margin: 0; font-weight: 600; }
+
+/* The light/dark switch: its icon shows the mode a click switches to, a moon
+   while light and a sun while dark (mode-toggle.js sets data-bs-theme on <html>) */
+.fs-mode-button {
+    background: none;
+    border: none;
+    border-radius: 50%;
+    padding: 0.4rem;
+    line-height: 0;
+    color: var(--bs-body-color);
+    cursor: pointer;
+}
+.fs-mode-button:hover { background-color: var(--bs-tertiary-bg); }
+.fs-icon-sun { display: none; }
+[data-bs-theme=dark] .fs-icon-sun { display: block; }
+[data-bs-theme=dark] .fs-icon-moon { display: none; }
 /* "Fillari" in the brand accent (red; lighter red on dark), "Status" in the text colour: same as the project pages */
 .fs-title-accent { color: var(--fs-accent); }
 

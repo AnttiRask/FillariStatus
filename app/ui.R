@@ -47,6 +47,8 @@ page_fluid(
         tags$link(rel = "icon", href = asset("favicon.ico"), sizes = "any"),
         tags$link(rel = "apple-touch-icon", href = asset("favicon.png")),
         tags$link(rel = "stylesheet", href = asset("styles.css")),
+        # Sets the page to light straight away, so it must load in the head
+        tags$script(src = asset("mode-toggle.js")),
         tags$script(src = asset("geolocation.js")),
         tags$script(src = asset("favourites.js"))
     ),
@@ -67,7 +69,7 @@ page_fluid(
                 ))
             ),
             # Light by default (like BiblioStatus); the toggle is still there
-            input_dark_mode(id = "dark_mode", mode = "light")
+            mode_toggle_button(strings)
         ),
         p(class = "fs-description", strings$description),
         div(

@@ -187,6 +187,26 @@ test_that("favourite_button reflects the favourite state", {
     expect_match(on, "\u2605", fixed = TRUE)
 })
 
+test_that("mode_toggle_button is a labelled button with a sun and a moon", {
+    strings <- list(mode_to_light = "Switch to light mode", mode_to_dark = "Switch to dark mode")
+    html <- as.character(mode_toggle_button(strings))
+    expect_match(html, '<button id="mode-toggle" type="button"', fixed = TRUE)
+    # the labels name the mode a click switches to; mode-toggle.js picks one
+    expect_match(html, 'data-label-to-light="Switch to light mode"', fixed = TRUE)
+    expect_match(html, 'data-label-to-dark="Switch to dark mode"', fixed = TRUE)
+    expect_match(html, "fs-icon-sun", fixed = TRUE)
+    expect_match(html, "fs-icon-moon", fixed = TRUE)
+    # the icons are decorative: the button carries the label
+    expect_equal(str_count(html, 'aria-hidden="true"'), 2)
+})
+
+test_that("the stylesheet shows the sun in dark mode and the moon in light mode", {
+    css <- paste(readLines(here::here("app/www/styles.css")), collapse = "\n")
+    expect_match(css, ".fs-icon-sun { display: none; }", fixed = TRUE)
+    expect_match(css, "[data-bs-theme=dark] .fs-icon-sun { display: block; }", fixed = TRUE)
+    expect_match(css, "[data-bs-theme=dark] .fs-icon-moon { display: none; }", fixed = TRUE)
+})
+
 test_that("the popup carries a favourite star for its station", {
     strings <- list(
         bike_one = "bike", bike_many = "bikes", directions = "Directions",

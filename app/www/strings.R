@@ -31,5 +31,8 @@ strings <- list(
     more_projects    = "More from youcanbeapirate:",
     source_code      = "Source code on GitHub",
     fav_add          = "Add to favourites",
-    fav_remove       = "Remove from favourites"
+    fav_remove       = "Remove from favourites",
+    # Light/dark switch: the labels name the mode a click switches to
+    mode_to_light    = "Switch to light mode",
+    mode_to_dark     = "Switch to dark mode"
 )
