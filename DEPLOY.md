@@ -166,7 +166,7 @@ nothing to leak or expire. Details that matter:
   (MapTiler, Stadia Maps).
 - **History:** the app used Carto's tiles with an API key until 2026-10-17. The Carto trial ended, the dashboard
   became unreachable, and the key (visible in the tile URLs of public sites) could neither be restricted to a
-  domain nor rotated. The `carto-api-key` secret in Secret Manager was disabled (both versions) on 2026-10-17, since neither app uses it any more; delete it for good later if nothing breaks.
+  domain nor rotated. The `carto-api-key` secret in Secret Manager was disabled on 2026-10-17 and deleted for good on 2026-10-18 (neither app uses it any more).
 
 ## Cost
 

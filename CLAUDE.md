@@ -40,7 +40,7 @@ Stop a local server **by port** (`ss -ltnp | grep :8083`), never with `pkill -f 
 ## Environment Variables
 
 - `DIGITRANSIT_SUBSCRIPTION_KEY` - Digitransit API key (server-side only).
-- That is the only secret. The map tiles (Esri World Light/Dark Gray) are keyless. Locally it lives in the git-ignored `.Renviron`; in Cloud Run it comes from Secret Manager (`digitransit-subscription-key`). Never commit or print its value. (`CARTO_API_KEY` / `carto-api-key` was used until 2026-10-17; the `carto-api-key` secret is now disabled in Secret Manager since no app uses it.)
+- That is the only secret. The map tiles (Esri World Light/Dark Gray) are keyless. Locally it lives in the git-ignored `.Renviron`; in Cloud Run it comes from Secret Manager (`digitransit-subscription-key`). Never commit or print its value. (`CARTO_API_KEY` / `carto-api-key` was used until 2026-10-17; the `carto-api-key` secret was deleted from Secret Manager on 2026-10-18.)
 
 ## Deployment
 
