@@ -82,13 +82,20 @@ through environment variables if traffic needs it.
 - **Secrets** (repo Settings > Secrets and variables > Actions): `GCP_PROJECT_ID` (`bibliostatus-app`).
 - **Runtime account:** the service runs as `fillaristatus-runtime`, which can read only the
   `digitransit-subscription-key` secret. The default compute account no longer has `roles/editor`.
+- **Commit label:** every revision gets a `git-sha` label (the first 12 characters of the commit), and the
+  smoke test fails the run unless the service carries this run's label. `gcloud run services describe
+  fillaristatus-app --region europe-north1 --format='value(metadata.labels.git-sha)'` tells which commit is live.
+- **Image cleanup:** the `cloud-run-source-deploy` Artifact Registry repository (shared by all the apps in the
+  project) keeps the 5 newest versions of each image and deletes the rest after 14 days. The policy is stored in
+  `infra/artifact-registry-cleanup.json` and applied with `gcloud artifacts repositories set-cleanup-policies
+  cloud-run-source-deploy --location europe-north1 --project bibliostatus-app --policy infra/artifact-registry-cleanup.json`.
+- **Runner:** the workflow runs on `ubuntu-24.04`, not `ubuntu-latest` (the label moved to 26.04 on 2026-10-31).
 - **Pinned actions:** third-party actions are pinned to commit SHAs (the comment gives the version);
   Dependabot (`.github/dependabot.yml`) proposes weekly updates for them and for the Docker base image.
 
-**About the key.** `github-deploy` is shared with BiblioStatus and has broad project roles (Cloud Run admin,
-storage admin, Cloud Build, Artifact Registry writer, service account user). The key stored here is a second,
-separate key for it (id starts `59985cf8`); the older key (BiblioStatus) must not be deleted. A more secure
-setup is Workload Identity Federation (keyless, short-lived tokens) with a dedicated least-privilege account.
+**About the service account.** `github-deploy` is shared with BiblioStatus and has broad project roles (Cloud Run admin,
+storage admin, Cloud Build, Artifact Registry writer, service account user). There is no key for it any more (see
+Keyless login above); a dedicated least-privilege deploy account would be the next step if that is ever wanted.
 
 ## Security headers
 

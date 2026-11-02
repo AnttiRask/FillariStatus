@@ -32,7 +32,9 @@ env:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: the label moved to Ubuntu 26.04 on 2026-10-31, and the
+    # project (like BiblioStatus) is built for 24.04. Move on purpose, after testing.
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
 
     steps:
@@ -98,15 +100,23 @@ jobs:
             --max-instances 3 \
             --concurrency 20 \
             --set-secrets "DIGITRANSIT_SUBSCRIPTION_KEY=digitransit-subscription-key:latest" \
+            --update-labels "git-sha=${GITHUB_SHA::12}" \
             --project ${{ secrets.GCP_PROJECT_ID }}
 
+      # Fails the run unless the service carries this commit's label and the
+      # page answers HTTP 200
       - name: Smoke test the deployed service
         run: |
-          URL=$(gcloud run services describe "$SERVICE" \
+          read -r URL LABEL < <(gcloud run services describe "$SERVICE" \
             --region "$REGION" \
             --project ${{ secrets.GCP_PROJECT_ID }} \
-            --format='value(status.url)')
+            --format='value(status.url,metadata.labels.git-sha)')
           echo "Service URL: $URL"
+          echo "Deployed commit label: $LABEL (this run: ${GITHUB_SHA::12})"
+          if [ "$LABEL" != "${GITHUB_SHA::12}" ]; then
+            echo "The service doesn't carry this commit's label"
+            exit 1
+          fi
           for attempt in 1 2 3 4 5; do
             CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$URL/" || true)
             echo "Attempt $attempt: HTTP $CODE"

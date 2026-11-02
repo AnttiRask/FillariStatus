@@ -104,6 +104,7 @@ run gcloud run deploy "$SERVICE_NAME" \
   --max-instances "$MAX_INSTANCES" \
   --concurrency "$CONCURRENCY" \
   --set-secrets "DIGITRANSIT_SUBSCRIPTION_KEY=${DIGITRANSIT_SECRET}:latest" \
+  --update-labels "git-sha=$(git rev-parse --short=12 HEAD 2>/dev/null || echo manual)" \
   --project "$PROJECT_ID"
 
 if [[ "${DRY_RUN:-0}" != "1" ]]; then
