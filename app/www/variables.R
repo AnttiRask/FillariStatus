@@ -4,6 +4,7 @@ digitransit_endpoint <- "https://api.digitransit.fi/routing/v2/hsl/gtfs/v1"
 
 refresh_ms <- 60 * 1000
 cache_max_age_s <- 60
+health_max_age_s <- 10 * 60   # /health fails when the last good fetch is older than this
 default_n_nearest <- 5L
 
 # Counts at or below these thresholds are classified as empty / low

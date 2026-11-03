@@ -82,6 +82,7 @@ through environment variables if traffic needs it.
 - **Secrets** (repo Settings > Secrets and variables > Actions): `GCP_PROJECT_ID` (`bibliostatus-app`).
 - **Runtime account:** the service runs as `fillaristatus-runtime`, which can read only the
   `digitransit-subscription-key` secret. The default compute account no longer has `roles/editor`.
+- **Health check:** `GET /health` answers 200 (`ok`, or `ok (off season)`) while the station data is fresh and 503 (`unavailable` / `stale`, no error details) when no data was ever fetched or the last good fetch is more than 10 minutes old. It is what the uptime monitor should call; `/` answers 200 even when Digitransit is down.
 - **Commit label:** every revision gets a `git-sha` label (the first 12 characters of the commit), and the
   smoke test fails the run unless the service carries this run's label. `gcloud run services describe
   fillaristatus-app --region europe-north1 --format='value(metadata.labels.git-sha)'` tells which commit is live.
