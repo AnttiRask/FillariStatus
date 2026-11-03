@@ -23,7 +23,6 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write  # keyless Google Cloud login (Workload Identity Federation)
 
 env:
   REGION: europe-north1
@@ -31,11 +30,19 @@ env:
   AR_REPO: cloud-run-source-deploy
 
 jobs:
+  # The tests must pass before anything is built or deployed
+  test:
+    uses: ./.github/workflows/tests.yml
+
   deploy:
+    needs: test
     # Pinned, not ubuntu-latest: the label moved to Ubuntu 26.04 on 2026-10-31, and the
     # project (like BiblioStatus) is built for 24.04. Move on purpose, after testing.
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write  # keyless Google Cloud login (Workload Identity Federation)
 
     steps:
       - name: Checkout repository

@@ -1,0 +1,72 @@
+name: Tests
+
+# Runs the testthat suite on the packages in renv.lock. No credentials are passed
+# on purpose: the tests use a saved API response and must not call Digitransit or
+# any other service. Runs on pull requests, on pushes that change code or tests,
+# on demand, and as the first job of the deploy workflow (workflow_call).
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "renv.lock"
+      - ".github/workflows/tests.yml"
+  workflow_dispatch:
+  workflow_call:
+
+# A newer push to the same ref makes the older run pointless. github.workflow
+# is the name of the workflow that started the run, so when the deploy workflow
+# calls this one its tests get their own group. Without it, a push to main
+# started this workflow and the deploy at the same moment, they shared one group
+# and cancelled each other (the deploy was skipped).
+concurrency:
+  group: ${{ github.workflow }}-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    # Pinned, not ubuntu-latest: the label moved to Ubuntu 26.04 on 2026-10-31, and
+    # this project is built for 24.04, like the production image (rocker/r-ver).
+    # `libgdal34t64` exists only there. Move to a newer Ubuntu on purpose, after
+    # testing a full restore there.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The R version and every package version come from renv.lock, so the
+      # tests run on what the production image runs (see the Dockerfile)
+      - name: Set up R
+        uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+        with:
+          r-version: renv
+          use-public-rspm: true
+
+      # What the tests load, plus libgdal34t64. The app never loads terra/raster
+      # (they are in renv.lock because leaflet depends on them), but a FRESH
+      # restore test-loads every package it installs, and terra.so can't load
+      # without libgdal ("libproj.so.25: cannot open shared object file"). Only the
+      # runtime library, not the dev packages (about 100 packages, which stalled
+      # the BiblioStatus runner twice). The name carries Ubuntu's library version
+      # (24.04 "noble"): on another Ubuntu this line fails loudly and the name must
+      # be looked up again. Downloads retry and time out quickly and the step is
+      # capped.
+      - name: Install system dependencies
+        timeout-minutes: 10
+        run: |
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y --no-install-recommends \
+            libcurl4-openssl-dev libssl-dev libxml2-dev libpng-dev libgdal34t64
+
+      - name: Restore packages from renv.lock
+        uses: r-lib/actions/setup-renv@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+
+      - name: Run tests
+        run: Rscript tests/testthat.R
