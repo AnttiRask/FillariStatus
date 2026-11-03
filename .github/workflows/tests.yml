@@ -49,10 +49,12 @@ jobs:
           r-version: renv
           use-public-rspm: true
 
-      # What the tests load, plus libgdal34t64. The app never loads terra/raster
-      # (they are in renv.lock because leaflet depends on them), but a FRESH
-      # restore test-loads every package it installs, and terra.so can't load
-      # without libgdal ("libproj.so.25: cannot open shared object file"). Only the
+      # What the tests load, plus the spatial runtime libraries. The app never loads
+      # terra/raster/sf/units/s2 (they are in renv.lock because leaflet depends on
+      # them), but a FRESH restore test-loads every package it installs, and each
+      # .so fails without its library: libgdal34t64 (terra, sf), libudunits2-0
+      # (units: "libudunits2.so.0: cannot open shared object file", seen on the
+      # first run 2026-11-03) and libabsl20220623t64 (s2). Only the
       # runtime library, not the dev packages (about 100 packages, which stalled
       # the BiblioStatus runner twice). The name carries Ubuntu's library version
       # (24.04 "noble"): on another Ubuntu this line fails loudly and the name must
@@ -63,7 +65,8 @@ jobs:
         run: |
           sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update
           sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y --no-install-recommends \
-            libcurl4-openssl-dev libssl-dev libxml2-dev libpng-dev libgdal34t64
+            libcurl4-openssl-dev libssl-dev libxml2-dev libpng-dev \
+            libgdal34t64 libudunits2-0 libabsl20220623t64
 
       - name: Restore packages from renv.lock
         uses: r-lib/actions/setup-renv@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
