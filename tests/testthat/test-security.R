@@ -11,16 +11,19 @@ test_that("the header set covers framing, referrers, permissions, transport and 
     expect_match(h[["Permissions-Policy"]], "camera=()", fixed = TRUE)
 })
 
-test_that("the enforced CSP only contains directives that can't break the app", {
-    csp <- security_headers()[["Content-Security-Policy"]]
+test_that("the full CSP is enforced, with no report-only copy left", {
+    h <- security_headers()
+    expect_false("Content-Security-Policy-Report-Only" %in% names(h))
+    csp <- h[["Content-Security-Policy"]]
+    expect_match(csp, "default-src 'self'", fixed = TRUE)
     expect_match(csp, "frame-ancestors 'none'", fixed = TRUE)
     expect_match(csp, "object-src 'none'", fixed = TRUE)
-    # no resource-loading directives in the enforced policy
-    expect_false(grepl("script-src|style-src|img-src|connect-src|default-src", csp))
+    expect_match(csp, "base-uri 'self'", fixed = TRUE)
+    expect_match(csp, "form-action 'self'", fixed = TRUE)
 })
 
-test_that("the report-only CSP allows exactly the hosts the app uses", {
-    csp <- security_headers()[["Content-Security-Policy-Report-Only"]]
+test_that("the CSP allows exactly the hosts the app uses", {
+    csp <- security_headers()[["Content-Security-Policy"]]
     expect_match(csp, "img-src [^;]*https://services\\.arcgisonline\\.com")
     expect_false(grepl("cartocdn", csp))
     # the CSP host and the map's tile host are the same thing

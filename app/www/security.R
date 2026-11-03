@@ -9,21 +9,14 @@
 map_tiles_host <- "https://services.arcgisonline.com"
 font_host <- "https://fonts.cdnfonts.com"
 
-# Enforced: things that can't break the app. frame-ancestors is the modern
-# clickjacking protection (X-Frame-Options below is the fallback).
-csp_enforced <- paste(
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "object-src 'none'",
-    "form-action 'self'",
-    sep = "; "
-)
-
-# Report-only: the full policy. Violations show up in the browser console
-# ("[Report Only] Refused to ...") without blocking anything, so it can be
-# tightened safely. Shiny and htmlwidgets use inline scripts/styles, hence
-# 'unsafe-inline'; wss: is the Shiny websocket.
-csp_report_only <- paste(
+# The full policy, enforced. Allowed: the app itself and exactly the two hosts it
+# uses (map tiles, Gotham). Shiny and htmlwidgets use inline scripts/styles and
+# eval, hence 'unsafe-inline' and 'unsafe-eval'; wss: is the Shiny websocket.
+# frame-ancestors is the modern clickjacking protection (X-Frame-Options below is
+# the fallback). To tighten or debug it, switch the header to
+# Content-Security-Policy-Report-Only: violations then show up in the browser
+# console without blocking anything.
+csp <- paste(
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     paste("style-src 'self' 'unsafe-inline'", font_host),
@@ -39,8 +32,7 @@ csp_report_only <- paste(
 
 security_headers <- function() {
     list(
-        "Content-Security-Policy"             = csp_enforced,
-        "Content-Security-Policy-Report-Only" = csp_report_only,
+        "Content-Security-Policy"             = csp,
         "X-Frame-Options"                     = "DENY",
         "X-Content-Type-Options"              = "nosniff",
         "Referrer-Policy"                     = "strict-origin-when-cross-origin",

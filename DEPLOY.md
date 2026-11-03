@@ -102,17 +102,19 @@ Keyless login above); a dedicated least-privilege deploy account would be the ne
 
 ## Security headers
 
-The page response carries `X-Frame-Options: DENY` plus an enforced CSP with `frame-ancestors 'none'`
-(clickjacking), `Referrer-Policy`, `Permissions-Policy` (geolocation for the app only), HSTS, and a full
-`Content-Security-Policy-Report-Only`. They live in `app/www/security.R` and are applied in `app/run.R`
-by wrapping the app's page handler (Shiny's `shiny.http.response.filter` option does nothing).
+The page response carries `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` (geolocation for the
+app only), HSTS and an **enforced full `Content-Security-Policy`** (enforced since 2026-11-03). They live in
+`app/www/security.R` and are applied in `app/run.R` by wrapping the app's page handler (Shiny's
+`shiny.http.response.filter` option does nothing).
 
-The report-only policy allows exactly the hosts the app uses: itself, `services.arcgisonline.com` (map tiles) and
-`fonts.cdnfonts.com` (Gotham). Browsers don't enforce it, they only report violations. To see them reliably,
-add a `securitypolicyviolation` event listener in the page (the Chrome console tool does not show report-only
-violations). To tighten: once no violations show up during real use, rename the header to
-`Content-Security-Policy` in `security.R` (and consider dropping `'unsafe-eval'` first, then replacing
-`'unsafe-inline'` with nonces if Shiny allows it).
+The policy allows exactly the hosts the app uses: itself, `services.arcgisonline.com` (map tiles) and
+`fonts.cdnfonts.com` (Gotham), plus `'unsafe-inline'` and `'unsafe-eval'` (Shiny and htmlwidgets need them) and
+`wss:` for the websocket. If the app breaks after a change (blank map, missing font), look for `Refused to ...` in the
+browser console: enforced violations do show there. To debug or tighten, switch the header in `security.R` to
+`Content-Security-Policy-Report-Only` and add a `securitypolicyviolation` listener in the page (report-only
+violations don't show in the console tool). Possible hardening: drop `'unsafe-eval'` first, then replace
+`'unsafe-inline'` with nonces if Shiny allows it. Adding a new external host (another tile provider, a font, an
+analytics script) means adding it to `security.R` and its test.
 
 ## GitHub repository settings
 
