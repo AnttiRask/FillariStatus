@@ -12,8 +12,9 @@ FillariStatus is an R Shiny app that lists the nearest Helsinki/Espoo city bike 
 # Run the app locally (keys come from .Renviron, which R reads on startup)
 PORT=8083 Rscript app/run.R            # open http://localhost:8083
 
-# Tests (no live API calls)
-Rscript -e 'testthat::test_dir("tests/testthat", reporter = "summary")'
+# Tests (no live API calls); CI runs the same file
+Rscript tests/testthat.R
+Rscript -e 'testthat::test_dir("tests/testthat", reporter = "summary")'   # same suite, doesn't exit non-zero
 rm -rf tests/testthat/_problems tests/testthat/testthat-problems.rds   # failure artifacts
 
 # Production image locally (reads .Renviron at runtime)
@@ -47,7 +48,7 @@ Stop a local server **by port** (`ss -ltnp | grep :8083`), never with `pkill -f 
 
 Google Cloud Run, project `bibliostatus-app` (shared with BiblioStatus), region `europe-north1`, service `fillaristatus-app`. See `DEPLOY.md`.
 
-- **Pushes to `main` that touch `app/**`, `Dockerfile`, `.dockerignore`, `renv.lock`, `.Rprofile` or `renv/activate.R|settings.json` deploy automatically** (`.github/workflows/deploy_shiny_app.yml`, keyless Workload Identity login, secret `GCP_PROJECT_ID`, ends with a smoke test). Docs/tests/plan pushes don't deploy. Always read a run's status from GitHub (`gh run view <id> --json status,conclusion,jobs`), not from a background task's exit code. Keep the workflow's flags in sync with `deploy.sh`.
+- **Pushes to `main` that touch `app/**`, `Dockerfile`, `.dockerignore`, `renv.lock`, `.Rprofile` or `renv/activate.R|settings.json` deploy automatically** (`.github/workflows/deploy_shiny_app.yml`, keyless Workload Identity login, secret `GCP_PROJECT_ID`, runs the tests first (`needs: test`, `tests.yml`), ends with a smoke test that also checks the `git-sha` label). Docs/tests/plan pushes don't deploy; `tests.yml` also runs on pull requests and pushes that touch `app/**`, `tests/**` or `renv.lock`. Always read a run's status from GitHub (`gh run view <id> --json status,conclusion,jobs`), not from a background task's exit code. Keep the workflow's flags in sync with `deploy.sh`.
 - Custom domain `fillaristatus.youcanbeapirate.com` is live over HTTPS (DNS at NS1: CNAME to `ghs.googlehosted.com.`; the Google-managed certificate renews itself). If a new mapping's certificate stays pending although DNS is right, delete and recreate the mapping (see DEPLOY.md), then require several consecutive successful HTTPS requests before calling it live.
 - The project page is `docs/` published by GitHub Pages at youcanbeapirate.com/FillariStatus/. **Ask the user before** creating cloud resources, deploying, touching GitHub secrets, DNS or the repo's visibility. When running `gcloud` read-only commands, close stdin (`</dev/null`) so an "enable this API?" prompt can't be auto-answered.
 
