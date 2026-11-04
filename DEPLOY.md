@@ -168,7 +168,7 @@ nothing to leak or expire. Details that matter:
   (this happened with the earlier Carto layer too). `add_basemap()` in `app/www/functions.R` does it right and a
   test guards it.
 - **Tiles are real only up to zoom 16.** From 17 on Esri serves a grey "Map data not yet available" tile, so
-  requests are capped at 16 (`map_tile_max_native_zoom`) and the browser scales them up for closer views.
+  the map's maximum zoom is capped at 16 too (`map_max_zoom`), because the browser would only stretch the tiles and blur the labels (it was 18 until 2026-11-04).
 - Esri's URLs are ordered `{z}/{y}/{x}`.
 - **No guarantees:** these keyless services have no SLA, and I could not verify Esri's current terms of use from
   here. For a low-traffic personal app the risk is small, but if Esri ever changes the terms, switch the tile

@@ -147,7 +147,7 @@ test_that("map_tile_urls gives a base and a labels layer per theme, in Esri's z/
 
 test_that("tiles are capped at the last real Esri zoom", {
     expect_equal(map_tile_max_native_zoom, 16)
-    expect_gte(map_max_zoom, map_tile_max_native_zoom)
+    expect_equal(map_max_zoom, map_tile_max_native_zoom)
     # the automatic fit never asks for a zoom without real tiles
     expect_lte(map_max_fit_zoom, map_tile_max_native_zoom)
     expect_match(map_attribution, "Esri", fixed = TRUE)
@@ -287,7 +287,7 @@ test_that("add_basemap adds a base layer with the attribution and a labels layer
     expect_match(base[[4]]$attribution, "Esri", fixed = TRUE)
     expect_null(labels[[4]]$attribution)
 
-    # tile requests are capped at the last real zoom, closer views are scaled up
+    # tile requests are capped at the last real zoom, the map cannot zoom past it
     expect_equal(base[[4]]$maxNativeZoom, map_tile_max_native_zoom)
     expect_equal(labels[[4]]$maxNativeZoom, map_tile_max_native_zoom)
     expect_equal(base[[4]]$maxZoom, map_max_zoom)

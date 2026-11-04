@@ -41,10 +41,11 @@ map_popup_pan_padding <- c(60, 10)
 # Basemap: Esri's World Light / Dark Gray canvas (no API key needed). Each theme
 # is a base layer plus a labels ("Reference") layer drawn on top. The tiles are
 # real only up to zoom 16; from 17 on Esri serves a grey "Map data not yet
-# available" tile, so tile requests are capped at 16 and scaled up beyond that.
+# available" tile. The map's maximum zoom equals the last real level: zooming
+# further only stretches the tiles and blurs the labels.
 map_tiles_host <- "https://services.arcgisonline.com"
 map_tile_max_native_zoom <- 16
-map_max_zoom <- 18
+map_max_zoom <- map_tile_max_native_zoom
 map_attribution <- paste0(
     "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; ",
     '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> ',

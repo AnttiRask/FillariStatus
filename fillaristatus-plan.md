@@ -184,7 +184,7 @@ FillariStatus/
 ### Basemap (Esri, keyless)
 - **Why:** the Carto key could no longer be restricted or rotated (the free trial ended and the user lost dashboard access) and was visible in the tile URLs of public sites; if Carto ever ended the grace period both apps' maps would break at once.
 - **What:** Esri's World Light Gray and World Dark Gray canvases, each a base layer plus a labels ("Reference") layer on top. They look almost like Carto's light and dark styles, need no key or account, and swap with the dark-mode toggle. Chosen over OpenStreetMap standard (busy, no dark version, usage policy) and over a keyed provider (another account to maintain); Stadia returned tiles without a key but only because they don't enforce their terms yet.
-- **Limits:** real tiles stop at zoom 16 (17+ is a grey placeholder), so requests are capped at 16 and scaled up; the automatic fit already stops at 16. No SLA, and Esri's current terms could not be verified from here. Attribution ("Tiles (c) Esri ...") is shown on the map.
+- **Limits:** real tiles stop at zoom 16 (17+ is a grey placeholder), so the map's maximum zoom is 16 as well (it was 18 with scaled-up tiles until 2026-11-04, which blurred the labels). No SLA, and Esri's current terms could not be verified from here. Attribution ("Tiles (c) Esri ...") is shown on the map.
 - **Code:** `map_tiles_host`, `map_tile_max_native_zoom`, `map_max_zoom`, `map_attribution` in `variables.R`; `map_tile_urls()` and `add_basemap()` in `functions.R` (tested, including the attribution); CSP `img-src` in `security.R`.
 - **Verified in Chrome:** both layers load from the one host, nothing is requested above zoom 16 even at map zoom 18, the attribution shows, the dark toggle swaps both layers, no CSP violations.
 

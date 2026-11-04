@@ -50,7 +50,8 @@ page_fluid(
         # Sets the page to light straight away, so it must load in the head
         tags$script(src = asset("mode-toggle.js")),
         tags$script(src = asset("geolocation.js")),
-        tags$script(src = asset("favourites.js"))
+        tags$script(src = asset("favourites.js")),
+        tags$script(src = asset("map-tiles.js"))
     ),
     div(
         class = "fs-container",
