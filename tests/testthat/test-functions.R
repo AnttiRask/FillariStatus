@@ -1,5 +1,5 @@
-source(here::here("app/www/variables.R"))
-source(here::here("app/www/functions.R"))
+source(here::here("app/lib/variables.R"))
+source(here::here("app/lib/functions.R"))
 library(stringr)
 
 stations_tbl <- tibble::tibble(

@@ -104,7 +104,7 @@ Keyless login above); a dedicated least-privilege deploy account would be the ne
 
 The page response carries `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` (geolocation for the
 app only), HSTS and an **enforced full `Content-Security-Policy`** (enforced since 2026-11-03). They live in
-`app/www/security.R` and are applied in `app/run.R` by wrapping the app's page handler (Shiny's
+`app/lib/security.R` and are applied in `app/run.R` by wrapping the app's page handler (Shiny's
 `shiny.http.response.filter` option does nothing).
 
 The policy allows exactly the hosts the app uses: itself, `services.arcgisonline.com` (map tiles) and
@@ -165,7 +165,7 @@ nothing to leak or expire. Details that matter:
 - **Attribution is required** and shown on the map ("Tiles (c) Esri, Esri, HERE, Garmin, (c) OpenStreetMap
   contributors, and the GIS user community"). It must be passed as `addTiles()`'s own `attribution` argument;
   `addTiles()` overwrites `options$attribution` with it, so one passed through `tileOptions()` is silently dropped
-  (this happened with the earlier Carto layer too). `add_basemap()` in `app/www/functions.R` does it right and a
+  (this happened with the earlier Carto layer too). `add_basemap()` in `app/lib/functions.R` does it right and a
   test guards it.
 - **Tiles are real only up to zoom 16.** From 17 on Esri serves a grey "Map data not yet available" tile, so
   the map's maximum zoom is capped at 16 too (`map_max_zoom`), because the browser would only stretch the tiles and blur the labels (it was 18 until 2026-11-04).
@@ -173,7 +173,7 @@ nothing to leak or expire. Details that matter:
 - **No guarantees:** these keyless services have no SLA, and I could not verify Esri's current terms of use from
   here. For a low-traffic personal app the risk is small, but if Esri ever changes the terms, switch the tile
   source: change `map_tiles_host` / `map_tile_urls()` / `add_basemap()` and the CSP host in
-  `app/www/security.R`. Alternatives: OpenStreetMap's standard tiles (keyless but busy, no dark version and a
+  `app/lib/security.R`. Alternatives: OpenStreetMap's standard tiles (keyless but busy, no dark version and a
   usage policy that discourages anything but light use), or a provider with a free tier and domain-restricted key
   (MapTiler, Stadia Maps).
 - **History:** the app used Carto's tiles with an API key until 2026-10-17. The Carto trial ended, the dashboard

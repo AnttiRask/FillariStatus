@@ -35,7 +35,7 @@
 
 **Hardening status (2026-10-18):** (1) FillariStatus runs as `fillaristatus-runtime` (secretAccessor on `digitransit-subscription-key` only); BiblioStatus runs as `bibliostatus-runtime`. (2) The default compute account no longer has `roles/editor` (only `roles/cloudbuild.builds.builder`, which Cloud Build needs); both apps still build and deploy. TrackTeller and TuneTeller still run as that account: their Cloud Run services show "not ready" although the sites answer 200, and the user is checking them in their own repos. (3) Deploys are keyless (Workload Identity Federation); both `GCP_SA_KEY` secrets and both stored keys of `github-deploy` are deleted. (4) The Turso token was rotated and its old versions disabled; the nightly BiblioStatus fetch ran fine on the new token. (5) The `carto-api-key` secret was deleted. (6) Budget alert: EUR 30/month on Google Cloud and Cloud Functions (alerts only, it doesn't stop spending). BiblioStatus has the same security headers, Dependabot, pinned actions and escaped popups as this app.
 
-**Parity with the sibling apps (started 2026-11-03):** done: `git-sha` label on every revision (smoke test fails without it), runner pinned to `ubuntu-24.04`, cleanup policy file in `infra/` (the policy itself was already live on the shared registry repo), `GET /health` (`app/www/health.R`, 200 `ok` / 503 `unavailable` or `stale` after 10 min without a good fetch) with an uptime check and Critical e-mail alert (`infra/uptime-alert-policy.json`). Also done (2026-11-03): tests in CI (`tests.yml`, `tests/testthat.R`) and the deploy waits for them (verified: revision `00017-5hn`, `test` job before `deploy`; the first CI run failed because `units` needs `libudunits2-0`, fixed in `109bdaa`). Also: the full CSP is enforced (see §7 notes). That closes every item of the parity list. Not gaps: the "session ended" message (the app reconnects by itself) and public R sources (the repo is public).
+**Parity with the sibling apps (started 2026-11-03):** done: `git-sha` label on every revision (smoke test fails without it), runner pinned to `ubuntu-24.04`, cleanup policy file in `infra/` (the policy itself was already live on the shared registry repo), `GET /health` (`app/lib/health.R`, 200 `ok` / 503 `unavailable` or `stale` after 10 min without a good fetch) with an uptime check and Critical e-mail alert (`infra/uptime-alert-policy.json`). Also done (2026-11-03): tests in CI (`tests.yml`, `tests/testthat.R`) and the deploy waits for them (verified: revision `00017-5hn`, `test` job before `deploy`; the first CI run failed because `units` needs `libudunits2-0`, fixed in `109bdaa`). Also: the full CSP is enforced (see §7 notes). That closes every item of the parity list. Not a gap: the "session ended" message (the app reconnects by itself). The R files served from `www/` were a gap, closed 2026-11-05 (moved to `app/lib/`).
 
 **Open (nothing urgent):** TrackTeller/TuneTeller "not ready" (user, in their repos); blurry large Esri labels at the highest zoom (pre-existing, not investigated); Esri terms/SLA unverified; Dependabot pull requests as they appear; re-check Cloud Run concurrency here if the number of assets grows (see §12).
 
@@ -60,7 +60,7 @@
 - **Light by default** with a dark mode toggle (bslib; it used to follow the OS setting), mobile-first single column, youcanbeapirate brand colours and Gotham font (§6).
 - **States:** off-season ("City bike season is over…", not an error), failed refresh with older data (keeps showing it, warns how old), failed first load (plain message, never raw error text), location denied (notice + search), empty search.
 - Footer: HSL / Digitransit CC BY 4.0 attribution, a privacy line, links to the sibling projects (BiblioStatus, Gallery of the Day, TrackTeller, TuneTeller) and to the source repo, credit.
-- English UI; all text lives in `app/www/strings.R` so Finnish can be added later.
+- English UI; all text lives in `app/lib/strings.R` so Finnish can be added later.
 
 ### Out of scope (v1)
 - Historical data / predictions ("usually empty by 08:15"), see §9.
@@ -78,7 +78,7 @@
 - Licence: data © HSL / Digitransit, CC BY 4.0, attributed in the footer.
 - The API sends `access-control-allow-origin: *`, so a browser-only app could call it directly. That is why a static GitHub Pages rewrite is *technically* possible, but it would expose the key and need a full JavaScript rewrite; it was rejected (see §8).
 
-### Query as implemented (`app/www/api.R`)
+### Query as implemented (`app/lib/api.R`)
 
 ```graphql
 {
@@ -147,7 +147,7 @@ FillariStatus/
 ├── docs/                      # the project page (GitHub Pages: main, /docs): index.html, screenshot.png, favicon.png
 ├── app/
 │   ├── run.R                  # entry point: sets the working dir, builds the app, wraps the page handler with the security headers
-│   ├── global.R               # libraries, sources www/*.R
+│   ├── global.R               # libraries, sources lib/*.R
 │   ├── ui.R                   # theme, tabs, controls, footer; CSS custom properties; asset() cache-busting
 │   ├── server.R               # reactive logic, list rendering, map via leafletProxy
 │   └── www/
@@ -165,7 +165,7 @@ FillariStatus/
     └── test-api.R  test-functions.R  test-security.R  test-server.R   # 220 expectations (30 / 113 / 25 / 52)
 ```
 
-`app/www/` is served as static files, so the R files in it are downloadable from the running app. They contain no secrets (keys come from the environment).
+`app/www/` is served as static files, so R files kept there were downloadable from the running app (they held no secrets; keys come from the environment). Until 2026-11-05 they were; now the R code lives in `app/lib/` and `tests/testthat/test-app-layout.R` fails if an R file appears in `www/`. (`app/R/` is deliberately not used: Shiny loads it by itself in alphabetical order.)
 
 ## 6. Implementation notes (as built)
 
@@ -194,8 +194,8 @@ FillariStatus/
 - Footer links to BiblioStatus, Gallery of the Day, TrackTeller, TuneTeller and the source repo; the favicon is a white bicycle on brand red.
 
 ### Security headers
-- `app/www/security.R` defines the headers and `with_security_headers()`; `app/run.R` wraps the app's `httpHandler` with it (Shiny's `shiny.http.response.filter` option was tested and does nothing; wrapping `httpHandler` was tested and works, and handles NULL / plain / promised responses). Static assets don't get the headers (they don't need them).
-- Headers (`app/www/security.R`): `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` (geolocation for self only), HSTS (1 year, no subdomains, no preload), `nosniff`, and the full CSP, enforced since 2026-11-03: exactly the app, `services.arcgisonline.com` (tiles) and `fonts.cdnfonts.com`, with `'unsafe-inline'`/`'unsafe-eval'` for Shiny/htmlwidgets and `wss:` for the websocket. It used to be report-only; before that only `frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'` was enforced.
+- `app/lib/security.R` defines the headers and `with_security_headers()`; `app/run.R` wraps the app's `httpHandler` with it (Shiny's `shiny.http.response.filter` option was tested and does nothing; wrapping `httpHandler` was tested and works, and handles NULL / plain / promised responses). Static assets don't get the headers (they don't need them).
+- Headers (`app/lib/security.R`): `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` (geolocation for self only), HSTS (1 year, no subdomains, no preload), `nosniff`, and the full CSP, enforced since 2026-11-03: exactly the app, `services.arcgisonline.com` (tiles) and `fonts.cdnfonts.com`, with `'unsafe-inline'`/`'unsafe-eval'` for Shiny/htmlwidgets and `wss:` for the websocket. It used to be report-only; before that only `frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'` was enforced.
 - **Full CSP enforced (2026-11-03):** the former report-only policy is now the enforced `Content-Security-Policy` (no report-only header any more). Verified in the browser before the change: websocket connected, Gotham loaded, 26 Esri tiles in light and 24 in dark mode, circle markers, the "you are here" marker, popups, the light/dark toggle, "Update my location"; no violations, and a deliberate `example.com` image probe was blocked and caught by the listener. Verified live afterwards (revision `00018-49p`): the same checks, 26/26 light and 24/24 dark tiles, popup, toggle, no violations. A first live check looked like a stuck map: the browser pane was hidden, which pauses rendering (see CLAUDE.md gotchas); it was not the CSP. See DEPLOY.md for how to tighten it further.
 
 ### Accessibility findings (measured, not assumed)
@@ -301,7 +301,7 @@ FillariStatus/
 - Chrome-extension quirks: refs go stale; a scroll wheel over the map zooms the map; bslib's dark-mode toggle needs a *real* click; don't call `location.reload()` inside a script.
 - **`addTiles()` silently drops an attribution passed through `tileOptions()`** (it runs `options$attribution <- attribution`). The tile credit was therefore missing from the map from the start; found while switching providers and fixed (`add_basemap()` + a test). Esri's tile URLs are `{z}/{y}/{x}`.
 - **A key that can't be restricted or rotated is a liability.** The Carto trial ended, the dashboard became unreachable, and its key was visible in the tile URLs of public sites: the app switched to keyless Esri tiles.
-- **Shiny has no response-header hook** (`shiny.http.response.filter` does nothing): wrap `app$httpHandler` (`app/www/security.R`, `app/run.R`).
+- **Shiny has no response-header hook** (`shiny.http.response.filter` does nothing): wrap `app$httpHandler` (`app/lib/security.R`, `app/run.R`).
 - **The Chrome console tool does not capture CSP report-only violations.** Use a `securitypolicyviolation` listener in the page and prove it catches a deliberate probe first; also list the hosts from `performance.getEntriesByType('resource')`.
 - **Geolocation permission can silently differ per loopback origin** (127.0.0.1 vs 127.0.0.2). Screenshots for the repo must force the fallback position with `Shiny.setInputValue('user_location', ...)`, be checked (first station Mannerheimintie, 42 m), and the raw captures deleted. One capture showed the user's real neighbourhood and was discarded.
 - **zsh does not word-split unquoted variables**; shell snippets that loop over `"repo tag"` strings broke. Use explicit arguments or arrays.

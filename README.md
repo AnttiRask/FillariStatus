@@ -37,7 +37,7 @@ Browser ──(location, favourites, search)──▶ Shiny server (Google Cloud
 
 - One cached upstream call per minute serves every visitor, so the app is gentle on the Digitransit API.
 - If a refresh fails, the last good data stays on screen with a warning instead of an error.
-- The page is served with browser-protection headers (clickjacking, referrer, permissions, HSTS and an enforced content security policy), set in `app/www/security.R`.
+- The page is served with browser-protection headers (clickjacking, referrer, permissions, HSTS and an enforced content security policy), set in `app/lib/security.R`.
 - There is no database and no accounts. Favourites live in your browser's `localStorage`; your location is used in memory to find nearby stations and is not stored.
 
 ## 📁 Project Structure

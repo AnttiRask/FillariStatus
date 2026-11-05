@@ -1,6 +1,6 @@
-source(here::here("app/www/variables.R"))
-source(here::here("app/www/functions.R"))   # format_age()
-source(here::here("app/www/health.R"))
+source(here::here("app/lib/variables.R"))
+source(here::here("app/lib/functions.R"))   # format_age()
+source(here::here("app/lib/health.R"))
 
 now <- as.POSIXct("2026-11-03 12:00:00", tz = "UTC")
 

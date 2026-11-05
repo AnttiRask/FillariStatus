@@ -1,5 +1,5 @@
-source(here::here("app/www/variables.R"))
-source(here::here("app/www/api.R"))
+source(here::here("app/lib/variables.R"))
+source(here::here("app/lib/api.R"))
 
 fixture <- function() {
     jsonlite::read_json(

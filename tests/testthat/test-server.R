@@ -5,7 +5,7 @@ library(leaflet)
 # live API call is made
 server_env <- new.env(parent = globalenv())
 for (f in c("variables", "strings", "api", "functions")) {
-    sys.source(here::here("app/www", paste0(f, ".R")), envir = server_env)
+    sys.source(here::here("app/lib", paste0(f, ".R")), envir = server_env)
 }
 # The test blocks below are evaluated in this file's environment, so bring in
 # the helpers they call directly instead of relying on other test files

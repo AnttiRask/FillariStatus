@@ -1,8 +1,8 @@
 library(shiny)
 
-# Run from the app directory so ui.R / global.R find their www/ files
-source("app/www/security.R")
-source("app/www/health.R")   # GET /health answers the uptime monitor
+# Run from the app directory so ui.R / global.R find their lib/ and www/ files
+source("app/lib/security.R")
+source("app/lib/health.R")   # GET /health answers the uptime monitor
 setwd("app")
 
 port <- as.integer(Sys.getenv("PORT", "8080"))
