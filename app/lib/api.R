@@ -68,23 +68,27 @@ parse_stations <- function(body) {
             sum()
     }
 
-    purrr::map(stations, \(s) {
-        tibble::tibble(
-            station_id    = s$stationId %||% NA_character_,
-            name          = s$name %||% NA_character_,
-            lat           = as.numeric(s$lat %||% NA_real_),
-            lon           = as.numeric(s$lon %||% NA_real_),
-            capacity      = as.integer(s$capacity %||% NA_integer_),
-            bikes         = count_bikes(s),
-            # availableSpaces.byType is empty in the live API; use total
-            docks         = as.integer(s$availableSpaces$total %||% NA_integer_),
-            allow_pickup  = s$allowPickup %||% NA,
-            allow_dropoff = s$allowDropoff %||% NA,
-            operative     = s$operative %||% NA,
-            network_id    = s$rentalNetwork$networkId %||% NA_character_
-        )
-    }) |>
-        dplyr::bind_rows()
+    # One vector per column, one tibble at the end: building a tibble per station
+    # and binding hundreds of them took about 2 s, and the single R process is
+    # blocked for that long on every refresh.
+    field <- function(get, type) {
+        purrr::map_vec(stations, \(s) get(s) %||% type, .ptype = type)
+    }
+
+    tibble::tibble(
+        station_id    = field(\(s) s$stationId, NA_character_),
+        name          = field(\(s) s$name, NA_character_),
+        lat           = field(\(s) as.numeric(s$lat %||% NA_real_), NA_real_),
+        lon           = field(\(s) as.numeric(s$lon %||% NA_real_), NA_real_),
+        capacity      = field(\(s) as.integer(s$capacity %||% NA_integer_), NA_integer_),
+        bikes         = purrr::map_int(stations, count_bikes),
+        # availableSpaces.byType is empty in the live API; use total
+        docks         = field(\(s) as.integer(s$availableSpaces$total %||% NA_integer_), NA_integer_),
+        allow_pickup  = field(\(s) s$allowPickup, NA),
+        allow_dropoff = field(\(s) s$allowDropoff, NA),
+        operative     = field(\(s) s$operative, NA),
+        network_id    = field(\(s) s$rentalNetwork$networkId, NA_character_)
+    )
 }
 
 # Last successful result, so a failed refresh can fall back to stale data

@@ -298,3 +298,15 @@ test_that("add_basemap switches both layers for dark mode and works on a proxy-s
     expect_match(tiles[[1]]$args[[1]], "World_Dark_Gray_Base", fixed = TRUE)
     expect_match(tiles[[2]]$args[[1]], "World_Dark_Gray_Reference", fixed = TRUE)
 })
+
+test_that("log_first_use logs a step once per process and says how long it took", {
+    start <- as.POSIXct("2026-01-01 12:00:00", tz = "UTC")
+    now <- start + 2.5
+    expect_message(
+        expect_true(log_first_use("test step", start, start - 10, now = now)),
+        "first test step done 2.5 s after the session started, 12.5 s after the process started"
+    )
+    expect_silent(expect_false(log_first_use("test step", start, start - 10, now = now)))
+    # without a process start the second figure is simply NA
+    expect_message(log_first_use("other step", start, now = now), "NA s after the process")
+})

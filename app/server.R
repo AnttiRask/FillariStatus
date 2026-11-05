@@ -1,4 +1,6 @@
 function(input, output, session) {
+    session_started <- Sys.time()
+
     # Reconnect quietly if the websocket drops, e.g. when Cloud Run closes it at
     # the 3600 s timeout. TRUE would do nothing here: the client only reconnects
     # if the host (Shiny Server, Posit Connect) allows it too; "force" makes it
@@ -24,6 +26,7 @@ function(input, output, session) {
     # Shared, memoised data (60 s cache); re-read every refresh interval
     stations <- reactive({
         invalidateLater(refresh_ms)
+        on.exit(log_first_use("station fetch", session_started, process_started))
         get_stations()
     })
 
@@ -76,6 +79,7 @@ function(input, output, session) {
     })
 
     output$station_list <- renderUI({
+        on.exit(log_first_use("station list", session_started, process_started))
         # Off-season and error states are explained by the notice above the tabs
         if (!state() %in% c("ok", "stale")) {
             return(NULL)
@@ -119,6 +123,7 @@ function(input, output, session) {
     # Base map only; stations are drawn through the proxy below, so panning
     # and zooming survive the 60 s data refresh
     output$map <- renderLeaflet({
+        on.exit(log_first_use("map render", session_started, process_started))
         leaflet(options = leafletOptions(maxZoom = map_max_zoom)) |>
             # "You are here" sits below the station markers (overlay pane is 400),
             # so a station right next to the user is never hidden by it

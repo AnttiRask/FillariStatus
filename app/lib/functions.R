@@ -259,3 +259,24 @@ add_basemap <- function(map, dark = FALSE) {
         ) |>
         leaflet::addTiles(urlTemplate = urls$labels, layerId = "labels", options = opts)
 }
+
+# Cold-start diagnosis: logs, once per R process, how long a step's first run took
+# to finish, counted from the start of the session and from the start of the
+# process (stderr goes to the Cloud Run logs). Later runs are silent.
+# process_started is set when this file is sourced, which global.R does at start.
+process_started <- Sys.time()
+log_first_use <- local({
+    seen <- character()
+    function(step, session_started, process_started = NULL, now = Sys.time()) {
+        if (step %in% seen) {
+            return(invisible(FALSE))
+        }
+        seen <<- c(seen, step)
+        since <- function(t) if (is.null(t)) NA_real_ else as.numeric(difftime(now, t, units = "secs"))
+        message(sprintf(
+            "[timing] first %s done %.1f s after the session started, %.1f s after the process started",
+            step, since(session_started), since(process_started)
+        ))
+        invisible(TRUE)
+    }
+})

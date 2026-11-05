@@ -99,3 +99,18 @@ test_that("an API error with no prior data returns NULL data", {
     expect_null(bad$fetched_at)
     expect_s3_class(bad$attempted_at, "POSIXct")
 })
+
+test_that("parse_stations gives typed NAs for missing fields and keeps one row per station", {
+    body <- list(data = list(vehicleRentalStations = list(
+        list(stationId = "a", name = "A", lat = 60.1, lon = 24.9),
+        list(stationId = "b")
+    )))
+    out <- parse_stations(body)
+    expect_equal(nrow(out), 2)
+    expect_equal(out$station_id, c("a", "b"))
+    expect_equal(out$bikes, c(0L, 0L))
+    expect_true(is.na(out$lat[2]) && is.numeric(out$lat))
+    expect_true(is.na(out$capacity[1]) && is.integer(out$capacity))
+    expect_true(all(is.na(out$operative)) && is.logical(out$operative))
+    expect_true(all(is.na(out$network_id)) && is.character(out$network_id))
+})
