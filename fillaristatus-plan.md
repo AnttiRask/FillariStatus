@@ -222,7 +222,7 @@ FillariStatus/
 - **Project page:** `docs/` published by GitHub Pages (main, /docs) at https://youcanbeapirate.com/FillariStatus/; verified live (HTTP 200, valid certificate, identical to the repo file).
 - **Repo settings (via the API):** secret scanning + push protection, Dependabot alerts + security updates, `main` protected against force-push and deletion (configuration verified; enforcement not exercised because testing it would rewrite `main`), Actions token read-only by default, actions pinned to SHAs, `dependabot.yml` for Actions and Docker.
 - Observed: cold start 3.3 s, warm response ~0.24 s; Cloud Run logs clean. The only non-2xx used to be `GET /favicon.ico` 404 (44 of them, all before 08:16 UTC); revision 2 serves the favicon and has had no 404s. Revision 2 was verified in Chrome over HTTPS (icons 200, placeholder CSS live, 5 markers with real tiles, favourites, no Shiny errors).
-- **Cost:** within the free tier expected; no budget alert was set up. `--min-instances 1` would remove cold starts at a small recurring cost (not applied; the user decides).
+- **Cost:** within the free tier expected; a budget alert was not set up then; since then two budgets of EUR 30 a month cover this project (read 2026-11-05, see DEPLOY.md). `--min-instances 1` would remove cold starts at a small recurring cost (not applied; the user decides).
 
 ## 9. Later ideas (v2+)
 - **Live location:** re-read the position on every 60 s refresh and when the tab becomes visible again, so distances follow a walking user (considered when the "My location" link was removed; one location read a minute while the page is open and permission is granted).
@@ -232,7 +232,7 @@ FillariStatus/
 - Walking time via Digitransit routing instead of straight-line distance.
 - PWA manifest (install to home screen). The favicon (PNG + ICO bicycle on the app blue) already exists.
 - Finnish/Swedish UI (strings are already centralised).
-- Optional `--min-instances 1`; a Cloud Billing budget alert.
+- Optional `--min-instances 1`. (A Cloud Billing budget alert exists, see DEPLOY.md.)
 - Companion course module, reusing the BiblioStatus course format.
 
 ## 10. Milestones
@@ -324,6 +324,6 @@ The app, the project page, automatic deploys and the security work are done and 
 1. ~~Custom domain~~ done (live, see §8). The README and the project page already point at it.
 2. ~~Main-site card~~ done (live on youcanbeapirate.com).
 3. ~~Restrict the Carto key~~ not needed any more: neither app uses it (see §0 for the optional clean-up of the unused secrets).
-4. Optional hardening: Workload Identity Federation with a dedicated least-privilege service account (then delete the new key `59985cf8…`, never the old BiblioStatus one); tighten the report-only CSP into an enforced one; a Cloud Billing budget alert; image/package vulnerability scanning; a test job in the workflow that gates deploys.
+4. Optional hardening. Done since this list was written: ~~Workload Identity Federation~~ (keyless, 2026-10-18; the keys are deleted); ~~enforce the CSP~~ (2026-11-03); ~~a Cloud Billing budget alert~~ (two budgets cover the project, read 2026-11-05); ~~a test job that gates deploys~~ (2026-11-03). **Still open:** a dedicated least-privilege deploy service account (`github-deploy` is shared with BiblioStatus and broad, and its provider doesn't pin the branch); image/package vulnerability scanning.
 5. v2 candidates from §9: tile retry/fallback, history/patterns, walking time, PWA, Finnish UI; optionally `--min-instances 1`.
 6. Still unverified: phones and non-Chrome browsers, the pinned-light default on a machine set to dark mode, a real season change, and whether the intermittent empty map box (reported once, in a non-Chrome desktop browser) still occurs now that a placeholder is shown.
