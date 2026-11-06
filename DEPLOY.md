@@ -92,13 +92,15 @@ through environment variables if traffic needs it.
   project) keeps the 5 newest versions of each image and deletes the rest after 14 days. The policy is stored in
   `infra/artifact-registry-cleanup.json` and applied with `gcloud artifacts repositories set-cleanup-policies
   cloud-run-source-deploy --location europe-north1 --project bibliostatus-app --policy infra/artifact-registry-cleanup.json`.
+- **Build buckets:** the two buckets Cloud Build and source deploys write to in this project (`bibliostatus-app_cloudbuild`, `run-sources-bibliostatus-app-europe-north1`; shared with BiblioStatus) delete objects older than 30 days (lifecycle rule applied 2026-11-05, read back, 7-day soft delete kept).
+- **Budget alerts:** the project has two budgets of EUR 30 a month ("BiblioStatus ja FillariStatus" and "BiblioStatus ja FillariStatus (functions"), email at 50%, 80% and 100% of actual spend, found by reading the billing account on 2026-11-05. They only alert; `--max-instances 3` limits the cost. Read them with `gcloud billing budgets list --billing-account 01022A-90DC69-4116A8 --billing-project=<a project where the Billing Budgets API is enabled>`.
 - **Runner:** the workflow runs on `ubuntu-24.04`, not `ubuntu-latest` (the label moved to 26.04 on 2026-10-31).
 - **Pinned actions:** third-party actions are pinned to commit SHAs (the comment gives the version);
   Dependabot (`.github/dependabot.yml`) proposes weekly updates for them and for the Docker base image.
 
 **About the service account.** `github-deploy` is shared with BiblioStatus and has broad project roles (Cloud Run admin,
-storage admin, Cloud Build, Artifact Registry writer, service account user). There is no key for it any more (see
-Keyless login above); a dedicated least-privilege deploy account would be the next step if that is ever wanted.
+storage admin, Cloud Build, Artifact Registry writer, service account user). It can also read the project's secrets. There is no key for it any more (see
+Keyless login above). The workload identity provider checks the repository (`FillariStatus` or `BiblioStatus`) but not the branch, and either repository's workflow can deploy the other's service. A dedicated least-privilege deploy account per app, with the provider limited to `refs/heads/main` as in TrackTeller, TuneTeller and Gallery of the Day, would be the next step if that is ever wanted (checked 2026-11-05).
 
 ## Security headers
 
