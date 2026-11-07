@@ -91,6 +91,9 @@ jobs:
             sleep 30
           done
 
+      # No --allow-unauthenticated: the service is already public and the deploy
+      # account may not change IAM (with the flag every deploy warned "Setting IAM
+      # policy failed"). deploy.sh, run by the owner, keeps the flag.
       - name: Deploy to Cloud Run
         run: |
           # --set-secrets replaces all existing secrets, which also drops the map-tile
@@ -99,7 +102,6 @@ jobs:
             --image "$IMAGE" \
             --platform managed \
             --region "$REGION" \
-            --allow-unauthenticated \
             --memory 1Gi \
             --timeout 3600 \
             --session-affinity \
