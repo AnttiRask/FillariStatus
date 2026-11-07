@@ -100,7 +100,7 @@ through environment variables if traffic needs it.
 
 **About the service account.** `github-deploy` is shared with BiblioStatus and has broad project roles (Cloud Run admin,
 storage admin, Cloud Build, Artifact Registry writer, service account user). It can also read the project's secrets. There is no key for it any more (see
-Keyless login above). The workload identity provider checks the repository (`FillariStatus` or `BiblioStatus`) but not the branch, and either repository's workflow can deploy the other's service. A dedicated least-privilege deploy account per app, with the provider limited to `refs/heads/main` as in TrackTeller, TuneTeller and Gallery of the Day, would be the next step if that is ever wanted (checked 2026-11-05).
+Keyless login above). The workload identity provider checks the repository (`FillariStatus` or `BiblioStatus`) but not the branch, and either repository's workflow can deploy the other's service. A dedicated least-privilege deploy account per app, with the provider limited to `refs/heads/main` as in TrackTeller, TuneTeller and Gallery of the Day, is prepared in `infra/setup_keyless_deploy.sh` (not run yet; checked 2026-11-07). Run it with `DRY_RUN=1` first.
 
 ## Security headers
 
