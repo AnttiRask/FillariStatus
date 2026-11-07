@@ -71,14 +71,17 @@ through environment variables if traffic needs it.
 - **When:** on pushes to `main` that change `app/**`, `Dockerfile`, `.dockerignore`, `renv.lock`, `.Rprofile`
   or `renv/activate.R` / `renv/settings.json` (docs, tests and the plan do **not** trigger a deploy), and
   on demand from the Actions tab ("Deploy to Cloud Run" > Run workflow). Deploys never overlap.
-- **Same flags as `deploy.sh`.** If you change one, change the other.
+- **Same flags as `deploy.sh`** (except `--allow-unauthenticated`, see below). If you change one, change the other.
 - **Smoke test:** the last step requests the service URL and fails the run unless it returns HTTP 200.
   A failed deploy leaves the previous revision serving.
 - **Keyless login:** the workflow authenticates with Workload Identity Federation (pool `github`,
-  provider `github-oidc`, limited to the FillariStatus and BiblioStatus repos) and acts as the
-  `github-deploy` service account. There is no stored key (`id-token: write` is the permission it needs).
-  A just-created IAM binding can take a few minutes to work; a first run may fail with
-  `iam.serviceAccounts.getAccessToken denied`, and a rerun passes.
+  provider `github-oidc`, limited to the FillariStatus and BiblioStatus repos on `refs/heads/main`) and acts as
+  the `fillaristatus-deploy` service account (since 2026-11-07). There is no stored key (`id-token: write` is
+  the permission it needs). A just-created IAM binding can take a few minutes to work; a first run may fail
+  with `iam.serviceAccounts.getAccessToken denied`, and a rerun passes.
+- **No `--allow-unauthenticated` in the workflow:** the deploy account may not change IAM, and the service is
+  already public (a deploy does not remove that). With the flag every deploy warned "Setting IAM policy
+  failed". `deploy.sh`, run by the owner, keeps the flag, so the two differ on purpose in this one flag.
 - **Secrets** (repo Settings > Secrets and variables > Actions): `GCP_PROJECT_ID` (`bibliostatus-app`).
 - **Runtime account:** the service runs as `fillaristatus-runtime`, which can read only the
   `digitransit-subscription-key` secret. The default compute account no longer has `roles/editor`, and since 2026-11-07 no access to the secrets either (it had kept it from the first setup; removed with the owner's approval, old policies saved, new revisions started afterwards).
@@ -98,9 +101,14 @@ through environment variables if traffic needs it.
 - **Pinned actions:** third-party actions are pinned to commit SHAs (the comment gives the version);
   Dependabot (`.github/dependabot.yml`) proposes weekly updates for them and for the Docker base image.
 
-**About the service account.** `github-deploy` is shared with BiblioStatus and has broad project roles (Cloud Run admin,
-storage admin, Cloud Build, Artifact Registry writer, service account user). It can also read the project's secrets. There is no key for it any more (see
-Keyless login above). The workload identity provider checks the repository (`FillariStatus` or `BiblioStatus`) but not the branch, and either repository's workflow can deploy the other's service. A dedicated least-privilege deploy account per app, with the provider limited to `refs/heads/main` as in TrackTeller, TuneTeller and Gallery of the Day, is prepared in `infra/setup_keyless_deploy.sh` (not run yet; checked 2026-11-07). Run it with `DRY_RUN=1` first.
+**About the service accounts.** The workflow runs as `fillaristatus-deploy`, created on 2026-11-07 by
+`infra/setup_keyless_deploy.sh`: only the FillariStatus repo can impersonate it, and the login works only from
+`refs/heads/main`. Its permissions are narrow and mostly on single resources: `run.developer` on this one
+service, acting as `fillaristatus-runtime` and as the default compute account (the build identity), reader on
+the `cloud-run-source-deploy` registry repo, read and write on the `bibliostatus-app_cloudbuild` source bucket
+(shared with BiblioStatus), `cloudbuild.builds.editor` and a role that only lists buckets. It reads no secrets.
+`github-deploy`, the older, broad account shared with BiblioStatus, still exists for BiblioStatus's workflow
+and goes away once that repo has switched too.
 
 ## Security headers
 
