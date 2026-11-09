@@ -107,8 +107,8 @@ through environment variables if traffic needs it.
 service, acting as `fillaristatus-runtime` and as the default compute account (the build identity), reader on
 the `cloud-run-source-deploy` registry repo, read and write on the `bibliostatus-app_cloudbuild` source bucket
 (shared with BiblioStatus), `cloudbuild.builds.editor` and a role that only lists buckets. It reads no secrets.
-`github-deploy`, the older, broad account shared with BiblioStatus, still exists for BiblioStatus's workflow
-and goes away once that repo has switched too.
+The older, broad account `github-deploy`, which this repo and BiblioStatus used to share, was deleted on
+2026-11-09, after both had deployed with their own accounts.
 
 ## Security headers
 
